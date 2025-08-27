@@ -6,7 +6,8 @@ import path from "path";
 
 export async function convertExcelToJson(
   inputPath: string,
-  outputDir: string
+  outputDir: string,
+  deleteSource:boolean = false
 ): Promise<string> {
   const fileName = `${Date.now()}.json`;
   const outputPath = path.join(outputDir, fileName);
@@ -20,7 +21,8 @@ export async function convertExcelToJson(
   return new Promise((resolve, reject) => {
     const ws = createWriteStream(outputPath, { encoding: "utf-8" });
     let headers: string[] = [];
-    let isFirst = true;
+      let isFirst = true;
+      let rowIndex = 0
 
     ws.write("["); // start JSON array
 
@@ -43,6 +45,8 @@ export async function convertExcelToJson(
             return acc;
         }, {});
 
+        rowObj.index = rowIndex++;
+
       ws.write((isFirst ? "" : ",") + JSON.stringify(rowObj));
       isFirst = false;
     });
@@ -50,7 +54,7 @@ export async function convertExcelToJson(
     stream.on("end", async () => {
       ws.end("]"); // end JSON array
       try {
-        await fs.unlink(inputPath); // delete original Excel
+        if(deleteSource) await fs.unlink(inputPath); // delete source file
         resolve(outputPath); //Return path to json file
       } catch (err) {
         reject(err);
