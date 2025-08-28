@@ -3,14 +3,16 @@ import path from "path";
 import { convertExcelToJson } from "./fileInjestor.js";
 import multer from "multer";
 import { saveFileToMemory } from "./fileStore.js";
+import { validateFileData } from "./validators.js";
+import fs from "fs/promises";
 
 
 /* export interface FileRequest extends Request {
   file: Express.Multer.File;
 } */
 
-const uploads_dir = path.join(__dirname, "..", "uploads");
-const upload = multer({ dest: uploads_dir }).single("file");
+const uploadsDir = path.join(__dirname, "..", "uploads");
+const upload = multer({ dest: uploadsDir }).single("file");
 
 export async function handleExcelUpload(req: Request, res: Response): Promise<void> {
     upload(req, res, async function (err: any) {
@@ -25,12 +27,19 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
         }
 
         try {
-            const { outputPath, data } = await convertExcelToJson(file.path, uploads_dir);
-            saveFileToMemory(path.basename(outputPath), data);
-            res.status(200).json({ message: "File Injested", outputPath });
+            const { outputPath, data } = await convertExcelToJson(file.path, uploadsDir);
+            const validatedData = validateFileData(data);
+            saveFileToMemory(path.basename(outputPath), validatedData);
+
+            const validatedFileName = path.basename(outputPath, ".json") + "-validated.json";
+            const validatedFilePath = path.join(uploadsDir, validatedFileName);
+
+            await fs.writeFile(validatedFilePath, JSON.stringify(validateFileData, null, 2), "utf-8");
+
+            res.status(200).json({ message: "File Injested and validated", outputPath, validatedFilePath });
         } catch (e) {
             res.status(500).json({
-                error: "Injestion Failed",
+                error: "Injestion or validation failed",
                 details: (e as Error).message
             });
         }
