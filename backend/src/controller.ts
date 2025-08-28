@@ -13,7 +13,7 @@ import { fileURLToPath } from "url";
 } */
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
-const uploadsDir = path.join("..", "uploads");
+const uploadsDir = path.join(currentDir,"..", "uploads");
 const upload = multer({ dest: uploadsDir }).single("file");
 
 export async function handleExcelUpload(req: Request, res: Response): Promise<void> {
