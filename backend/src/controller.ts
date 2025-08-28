@@ -2,7 +2,7 @@ import type{ Request, Response } from "express";
 import path from "path";
 import { convertExcelToJson } from "./fileInjestor.js";
 import multer from "multer";
-import { error } from "console";
+import { saveFileToMemory } from "./fileStore.js";
 
 
 /* export interface FileRequest extends Request {
@@ -13,7 +13,7 @@ const uploads_dir = path.join(__dirname, "..", "uploads");
 const upload = multer({ dest: uploads_dir }).single("file");
 
 export async function handleExcelUpload(req: Request, res: Response): Promise<void> {
-    upload(req, res, async function (err) {
+    upload(req, res, async function (err: any) {
         const file = (req as Request & { file: Express.Multer.File }).file;
         if (!file) {
             res.status(400).json({ error: "No file uploaded" });
@@ -25,8 +25,9 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
         }
 
         try {
-            const jsonPath = await convertExcelToJson(file.path, uploads_dir);
-            res.status(200).json({ message: "File Injested", jsonPath });
+            const { outputPath, data } = await convertExcelToJson(file.path, uploads_dir);
+            saveFileToMemory(path.basename(outputPath), data);
+            res.status(200).json({ message: "File Injested", outputPath });
         } catch (e) {
             res.status(500).json({
                 error: "Injestion Failed",

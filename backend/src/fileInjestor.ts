@@ -8,7 +8,7 @@ export async function convertExcelToJson(
     inputPath: string,
     outputDir: string,
     deleteSource: boolean = false
-): Promise<string> {
+): Promise<{ outputPath: string, data: Record<string, any>[] }> {
     const fileName = path.basename(inputPath, path.extname(inputPath)) + "-injested" + `-${Date.now()}` +".json";;
     const outputPath = path.join(outputDir, fileName);
 
@@ -23,6 +23,7 @@ export async function convertExcelToJson(
         let headers: string[] = [];
         let isFirst = true;
         let rowIndex = 0
+        let data:Record<string,any>[] = [];
 
         ws.write("["); // start JSON array
 
@@ -52,13 +53,15 @@ export async function convertExcelToJson(
 
             ws.write((isFirst ? "" : ",") + JSON.stringify(rowObj));
             isFirst = false;
+
+            data.push(rowObj);
         });
 
         stream.on("end", async () => {
             ws.end("]"); // end JSON array
             try {
                 if (deleteSource) await fs.unlink(inputPath); // delete source file
-                resolve(outputPath); //Return path to json file
+                resolve({outputPath, data}); //Return path and data to json file
             } catch (err) {
                 reject(err);
             }
