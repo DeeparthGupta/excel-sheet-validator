@@ -44,7 +44,8 @@ export async function convertExcelToJson(
                 acc[key] = formatted.obj[key] ?? null;
                 return acc;
             }, {});
-
+            
+            // Add extra keys
             rowObj.index = rowIndex++;
             rowObj.valid = null;
             rowObj.errors = [];

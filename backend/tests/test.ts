@@ -8,8 +8,8 @@ async function main() {
         process.exit(1);
     }
 
-    const excelPath = path.resolve("C:/Repos/customer-validator-frappe/backend/uploads/", fileName);
-    const outputDir = path.resolve("C:/Repos/customer-validator-frappe/backend/uploads/");
+    const excelPath = path.resolve("D:/Repos/customer-validator-frappe/backend/uploads/", fileName);
+    const outputDir = path.resolve("D:/Repos/customer-validator-frappe/backend/uploads/");
 
     try {
         const jsonPath = await convertExcelToJson(excelPath, outputDir);

@@ -4,5 +4,6 @@
         "rootDir": "./",
         "outDir": "./dist-tests"
     },
-    "include": ["src/**/*", "tests/**/*"]
+    "include": ["src/**/*", "tests/**/*"],
+    "exclude": ["src/validators.ts"]
 }
