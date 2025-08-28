@@ -5,13 +5,15 @@ import multer from "multer";
 import { saveFileToMemory } from "./fileStore.js";
 import { validateFileData } from "./validators.js";
 import fs from "fs/promises";
+import { fileURLToPath } from "url";
 
 
 /* export interface FileRequest extends Request {
   file: Express.Multer.File;
 } */
 
-const uploadsDir = path.join(__dirname, "..", "uploads");
+const currentDir = path.dirname(fileURLToPath(import.meta.url));
+const uploadsDir = path.join("..", "uploads");
 const upload = multer({ dest: uploadsDir }).single("file");
 
 export async function handleExcelUpload(req: Request, res: Response): Promise<void> {
