@@ -1,11 +1,12 @@
 import type { Request, Response } from "express";
 import path from "path";
-import { convertExcelToJson } from "./fileSystem/fileInjestor.js";
+import { convertExcelToJson } from "./services/fileInjestorService.js";
 import multer from "multer";
-import { saveFileToMemory } from "./fileSystem/fileStore.js";
+import { retrieveFileFromMemory, saveFileToMemory } from "./services/fileStorageService.js";
 import { validateFileData } from "./validation/validators.js";
 import fs from "fs/promises";
 import { fileURLToPath } from "url";
+import { error } from "console";
 
 
 /* export interface FileRequest extends Request {
@@ -47,12 +48,15 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
             const validatedFileName = path.basename(outputPath, ".json") + "-validated.json";
             const validatedFilePath = path.join(uploadsDir, validatedFileName);
 
-            saveFileToMemory(path.basename(outputPath), validatedData);
+            saveFileToMemory(file.originalname, validatedData);
 
             // Write file to storage
             await fs.writeFile(validatedFilePath, JSON.stringify(validatedData, null, 2), "utf-8");
 
-            res.status(200).json({ message: "File Injested and validated", outputPath, validatedFilePath });
+            res.status(200).json({
+                message: "File Injested and validated",
+                fileName: file.originalname,
+            });
         } catch (e) {
             res.status(500).json({
                 error: "Injestion or validation failed",
@@ -60,5 +64,27 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
             });
         }
 
+    });
+}
+
+export async function retrieveFileData(req: Request, res: Response) {
+    const fileName = req.query.filename as string;
+
+    if (!fileName) {
+        res.status(400).json({ error: "Invalid or missing file name" });
+        return;
+    }
+
+    const data = retrieveFileFromMemory(fileName);
+
+    if (!data) {
+        res.status(404).json({ error: "No data for given file name" });
+        return;
+    }
+
+    res.status(200).json({
+        message: "File data retrieved successfully.",
+        filename: fileName,
+        data: data
     });
 }

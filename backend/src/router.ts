@@ -1,8 +1,9 @@
 import express from "express";
-import { handleExcelUpload } from "./controller.js";
+import { handleExcelUpload, retrieveFileData } from "./controller.js";
 
 const router = express.Router();
 
 router.post("/upload", handleExcelUpload);
+router.get("/retrieve", retrieveFileData);
 
 export default router;
