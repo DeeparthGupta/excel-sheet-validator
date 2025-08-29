@@ -64,17 +64,20 @@ function App() {
 	const processDataForFrappe = (data) => {
 		const columns = Object.keys(data[0] || {}).map((key) => ({
 			name: key,
-			editable: false,
+			editable: true,
 			id: key
 		}));
 
-		const rows = data.map((row) => {
-			return columns.reduce((acc, column) => {
-            	acc[column.id] = row[column.id];
+		const rows = data.map((row) => 
+			columns.reduce((acc, column) => {
+            	acc.push(String(row[column.id] ?? ""));
             	return acc;
-       		}, {});
-		});
+       		}, [])
+		);
 		
+		console.log("Columns:", JSON.stringify(columns,null,2));
+		console.log("Rows:", JSON.stringify(rows,null,2));
+
 		setColumns(columns);
 		setRows(rows);
 	}
