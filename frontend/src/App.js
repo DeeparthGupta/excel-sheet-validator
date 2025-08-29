@@ -68,11 +68,10 @@ function App() {
 			id: key
 		}));
 
-		const rows = data.map((row) => 
-			columns.reduce((acc, column) => {
-            	acc.push(String(row[column.id] ?? ""));
-            	return acc;
-       		}, [])
+		const rows = data.map(row =>
+			columns.map(col =>
+				String(row[col.id] ?? "")
+			)
 		);
 		
 		console.log("Columns:", JSON.stringify(columns,null,2));
