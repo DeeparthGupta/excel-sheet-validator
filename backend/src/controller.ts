@@ -1,9 +1,9 @@
 import type{ Request, Response } from "express";
 import path from "path";
-import { convertExcelToJson } from "./fileInjestor.js";
+import { convertExcelToJson } from "./localDataManagement/fileInjestor.js";
 import multer from "multer";
-import { saveFileToMemory } from "./fileStore.js";
-import { validateFileData } from "./validators.js";
+import { saveFileToMemory } from "./localDataManagement/fileStore.js";
+import { validateFileData } from "./validation/validators.js";
 import fs from "fs/promises";
 import { fileURLToPath } from "url";
 
