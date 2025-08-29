@@ -1,8 +1,8 @@
-import type{ Request, Response } from "express";
+import type { Request, Response } from "express";
 import path from "path";
-import { convertExcelToJson } from "./localDataManagement/fileInjestor.js";
+import { convertExcelToJson } from "./fileSystem/fileInjestor.js";
 import multer from "multer";
-import { saveFileToMemory } from "./localDataManagement/fileStore.js";
+import { saveFileToMemory } from "./fileSystem/fileStore.js";
 import { validateFileData } from "./validation/validators.js";
 import fs from "fs/promises";
 import { fileURLToPath } from "url";
@@ -15,6 +15,7 @@ import { fileURLToPath } from "url";
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const uploadsDir = path.join(currentDir, "..", "uploads");
 
+// Multer setup to store files using file name
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadsDir)
@@ -40,12 +41,15 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
 
         try {
             const { outputPath, data } = await convertExcelToJson(file.path, uploadsDir);
-            const validatedData = validateFileData(data);
-            saveFileToMemory(path.basename(outputPath), validatedData);
 
+            // Data validation
+            const validatedData = validateFileData(data);
             const validatedFileName = path.basename(outputPath, ".json") + "-validated.json";
             const validatedFilePath = path.join(uploadsDir, validatedFileName);
 
+            saveFileToMemory(path.basename(outputPath), validatedData);
+
+            // Write file to storage
             await fs.writeFile(validatedFilePath, JSON.stringify(validatedData, null, 2), "utf-8");
 
             res.status(200).json({ message: "File Injested and validated", outputPath, validatedFilePath });
@@ -55,6 +59,6 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
                 details: (e as Error).message
             });
         }
-        
+
     });
 }
