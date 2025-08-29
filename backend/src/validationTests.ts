@@ -16,7 +16,7 @@ export function rowvalidator(
                 if (key.toLowerCase() === "time") row[key] = defaultVal;
                 else errorKeys.add(key);
             } else {
-                if (key.toLowerCase() === "time" && !timeValidator(row[key])) errorKeys.add(key);
+                if (key.toLowerCase() === "time" && !timeValidator(row[key])) row[key] = defaultVal;
                 if (key.toLowerCase() === "number" && !rangeValidator(row[key])) errorKeys.add(key);
             }
             
@@ -30,7 +30,7 @@ function rangeValidator(
     min: number = 1,
     max: number = 11000
 ): boolean{
-    return (min >= number && number <= max);
+    return (number >= min && number <= max);
 }
 
 function timeValidator(
@@ -57,7 +57,7 @@ export function uniquenessValidator(
         keys.forEach(key => {
             const value = record[key];
             if (value !== null) {
-                const keyMap = valueMap.get(key)!; // ! defines a value as definitely not null
+                const keyMap = valueMap.get(key)!; // ! defines a value as definitely not null or undefined
                 if (!keyMap.has(value)) {
                     keyMap.set(value, []);
                 }
@@ -72,8 +72,8 @@ export function uniquenessValidator(
         keyMap.forEach((indices, value) => {
             if (indices.length > 1) {
                 indices.forEach(idx => {
-                    if (!result.idx) result.idx = [];
-                    if (!result.idx.includes(key)) result[idx]!.push(key);
+                    if (!result[idx]) result[idx] = [];
+                    if (!result[idx].includes(key)) result[idx]!.push(key);
                 });
            } 
         });

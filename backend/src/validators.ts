@@ -1,11 +1,27 @@
+import path from "path";
 import { rowvalidator, uniquenessValidator } from "./validationTests.js";
+import fs from "fs/promises";
 
 function objectMerge(object1, object2) {
+    fs.writeFile(path.join("uploads","object1.json"), JSON.stringify(object1, null, 2), "utf-8")
+      .catch(console.error);
+    fs.writeFile(path.join("uploads","object2.json"), JSON.stringify(object2, null, 2), "utf-8")
+      .catch(console.error);
+
+    const object1Keys = Object.keys(object1);
+    const object2Keys = Object.keys(object2);
+
+    if (object1Keys.length < 1) {
+        return object2;
+    } else if (object2Keys.length < 1) {
+        return object1;
+    }
+
     const mergedObject = {};
-    const allKeys = new Set([...Object.keys(object1), ...Object.keys(object2)]);
+    const allKeys = new Set([...object1Keys, ...object2Keys]);
     allKeys.forEach(key => {
-        const arr1 = object1[key];
-        const arr2 = object2[key];
+        const arr1 = object1[key] || [];
+        const arr2 = object2[key] || [];
 
         mergedObject[key] = Array.from(new Set([...arr1, ...arr2]));
     });    
@@ -16,7 +32,12 @@ function objectMerge(object1, object2) {
 export function validateFileData(fileData: Record<string,any>[]): Record<string,any>[] {
     let uniquenessViolations: Record<string, string[]> = uniquenessValidator(["Number", "Email"], fileData);
     let rowViolations = fileData.reduce((accumulator, record) => {
-        accumulator[record.index] = rowvalidator(record);
+        const errors = rowvalidator(record);
+        
+        if (errors.length > 0) {
+            accumulator[record.index] = errors;
+        }
+        
         return accumulator;
     }, {} as Record<string, string[]>);
 

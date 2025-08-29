@@ -13,8 +13,18 @@ import { fileURLToPath } from "url";
 } */
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
-const uploadsDir = path.join(currentDir,"..", "uploads");
-const upload = multer({ dest: uploadsDir }).single("file");
+const uploadsDir = path.join(currentDir, "..", "uploads");
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadsDir)
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.originalname);
+    }
+});
+
+const upload = multer({ storage }).single("file");
 
 export async function handleExcelUpload(req: Request, res: Response): Promise<void> {
     upload(req, res, async function (err: any) {
@@ -36,7 +46,7 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
             const validatedFileName = path.basename(outputPath, ".json") + "-validated.json";
             const validatedFilePath = path.join(uploadsDir, validatedFileName);
 
-            await fs.writeFile(validatedFilePath, JSON.stringify(validateFileData, null, 2), "utf-8");
+            await fs.writeFile(validatedFilePath, JSON.stringify(validatedData, null, 2), "utf-8");
 
             res.status(200).json({ message: "File Injested and validated", outputPath, validatedFilePath });
         } catch (e) {

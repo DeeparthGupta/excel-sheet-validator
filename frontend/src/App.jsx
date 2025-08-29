@@ -32,10 +32,10 @@ function App() {
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: "2rem auto", fontFamily: "sans-serif" }}>
-      <h1>Upload Excel File</h1>
-      <input type="file" ref={fileInputRef} disabled={uploading} />
-      <button onClick={handleUpload} disabled={uploading} style={{ marginLeft: 8 }}>
+    <div style={{ maxWidth: 600, margin: "2rem auto" }}>
+      <h2>Upload Excel File</h2>
+      <input type="file" ref={fileInputRef} disabled={uploading} accept=".xlsx" />
+      <button onClick={handleUpload} disabled={uploading} style={{ marginLeft: 8, border:"1px solid #000" }}>
         {uploading ? "Uploading..." : "Upload"}
       </button>
       <pre style={{ background: "#f4f4f4", padding: 16, marginTop: 24 }}>{result}</pre>

@@ -13,7 +13,7 @@ async function main() {
 
     try {
         const jsonPath = await convertExcelToJson(excelPath, outputDir);
-        console.log("Conversion successful! JSON saved at:", jsonPath);
+        console.log("JSON saved at:", jsonPath);
     } catch (err) {
         console.error("Conversion failed:", err);
     }
