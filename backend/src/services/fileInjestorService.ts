@@ -9,7 +9,7 @@ export async function convertExcelToJson(
     outputDir: string,
     deleteSource: boolean = false
 ): Promise<{ outputPath: string, data: Record<string, any>[] }> {
-    const fileName = path.basename(inputPath, path.extname(inputPath)) + "-injested" + `-${Date.now()}` +".json";;
+    const fileName = path.basename(inputPath, path.extname(inputPath)) + "-injested" + `-${Date.now()}` +".json";
     const outputPath = path.join(outputDir, fileName);
 
     const stream = await getXlsxStream({
@@ -22,7 +22,7 @@ export async function convertExcelToJson(
         const ws = createWriteStream(outputPath, { encoding: "utf-8" });
         let headers: string[] = [];
         let isFirst = true;
-        let rowIndex = 0
+        let rowIndex = 0;
         let data:Record<string,any>[] = [];
 
         ws.write("["); // start JSON array
