@@ -2,7 +2,7 @@ import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
 
 @Entity({ name: "customers" })
-export class Customer{
+export class CustomerPost{
 
     @PrimaryGeneratedColumn()
     serial_number!: number;

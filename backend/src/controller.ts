@@ -6,7 +6,9 @@ import { retrieveFileFromMemory, saveFileToMemory } from "./services/fileStorage
 import { validateFileData } from "./validation/validators.js";
 import fs from "fs/promises";
 import { fileURLToPath } from "url";
-import { error } from "console";
+import { NoSQLDataSource, RDBMSDataSource } from "./db/data-sources.js";
+import { CustomerPost } from "./db/CustomerPost.js";
+import { CustomerMongo } from "./db/CustomerMongo.js";
 
 
 /* export interface FileRequest extends Request {
@@ -87,4 +89,59 @@ export async function retrieveFileData(req: Request, res: Response) {
         filename: fileName,
         data: data
     });
+}
+
+const rowToEntity = (row: any) => ({
+    serial_number: row.index,
+    customer_name: row["Customer Name"],
+    number: row.Number ?? row.number,
+    email: row.Email ?? row.email,
+    time: row.Time ?? row.time,
+});
+
+export async function uploadToDatabase(req: Request, res: Response) {
+    const fileName = req.query.filename as string;
+    const db = req.path.includes("postgres") ? "postgres" : "mongodb";
+
+    if (!fileName) {
+        res.status(400).json({ error: "Invalid or missing file name" });
+        return;
+    }
+
+    const data = retrieveFileFromMemory(fileName);  
+
+    if (!data) {
+        res.status(404).json({ error: "Data not found" });
+        return;
+    }
+
+    const validRecords = data.filter((row: any) => row.valid);
+
+    if (!(validRecords.length > 0)) {
+        res.status(400).json({ message: "No valid records to upload" });
+        return;
+    }
+
+    try {
+        let repo;
+        if (db === "postgres") {
+            if (!NoSQLDataSource.isInitialized) await NoSQLDataSource.initialize();
+            repo = NoSQLDataSource.getRepository(CustomerMongo);
+        }
+        else {
+            if (!RDBMSDataSource.isInitialized) await RDBMSDataSource.initialize();
+            repo = RDBMSDataSource.getRepository(CustomerPost);
+        }
+
+        const entities = validRecords.map(rowToEntity).map(row => repo.create(row));
+        await repo.insert(entities);
+        res.status(200).json({
+            message: `Successfully added ${entities.length} records to mongodb`
+        })
+    } catch (err) {
+        res.status(500).json({
+            error: "DB upload failed",
+            details: (err as Error).message
+        });
+    }
 }
