@@ -65,12 +65,14 @@ function App() {
 		}
 	}
 
-	const processDataForFrappe = (data) => {
-		const columns = Object.keys(data[0] || {}).map((key) => ({
-			name: key,
-			editable: true,
-			id: key
-		}));
+	const processDataForFrappe = (data,hiddenColumns) => {
+		const columns = Object.keys(data[0] || {})
+			.filter(key => !hiddenColumns.includes(key))
+			.map((key) => ({
+				name: key,
+				editable: true,
+				id: key,
+			}));
 
 		const rows = data.map(row =>
 			columns.map(col =>
@@ -132,7 +134,7 @@ function App() {
 	
 	useEffect(() => {
 		if (data.length > 0) {
-			processDataForFrappe(data)
+			processDataForFrappe(data, ["index", "errors", "valid"]);
 		}
 	}, [data]);
 
