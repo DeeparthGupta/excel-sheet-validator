@@ -3,7 +3,9 @@ import "frappe-datatable/dist/frappe-datatable.min.css";
 import DataTable from "frappe-datatable";
 
 function App() {
+	const targetServer = "http://localhost:3001";
 	const fileInputRef = useRef();
+	const tableDivRef = useRef();
 	const tableRef = useRef();
   	const [result, setResult] = useState("");
   	const [uploading, setUploading] = useState(false);
@@ -30,7 +32,7 @@ function App() {
 		setResult("Uploading...");
 
 		try {
-	  		const response = await fetch("http://localhost:3001/upload", {
+	  		const response = await fetch(`${targetServer}/upload`, {
 				method: "POST",
 				body: formData,
 	  		});
@@ -51,7 +53,7 @@ function App() {
 
 	const retrieveData = async (filename) => {
 		try {
-			const response = await fetch(`http://localhost:3001/retrieve?filename=${filename}`);
+			const response = await fetch(`${targetServer}/retrieve?filename=${filename}`);
 			const responseData = await response.json();
 
 			if (response.ok && responseData.data.length > 0) {
@@ -111,8 +113,8 @@ function App() {
 
 	const uploadToDB = async () => {
 		const endpoint = uploadTarget === "postgres"
-			? "http://localhost:3001/uploadpostgres"
-			: "http://localhost:3001/uploadmongodb";
+			? `${targetServer}/uploadpostgres`
+			: `${targetServer}/uploadmongodb`;
 		
 		try {
 			const response = await fetch(`${endpoint}?filename=${filename}`);
@@ -126,28 +128,62 @@ function App() {
 		}
 	}
 
+
+	const applyStyleToRow = (rowData) => {
+
+		if (rowData.valid) {
+			tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowData.index)}`, {
+				background: '#77e977ff'
+			});
+		} else if(!rowData.valid){
+			tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowData.index)}`, {
+				background: '#f0b6b6ff'
+			});
+
+			rowData.errors.forEach(key => {
+				const index = columns.findIndex(col => col.id === key)+1;
+				console.log(index);
+				tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowData.index)}.dt-cell--col-${index}`, {
+					background: '#f72424ff',
+				});
+			});
+		}
+		
+	}
+
+	const applyStyles = () => {
+		data.forEach(rowData => {
+			applyStyleToRow(rowData);
+		});
+	}
+
+	// Get uploaded file data using the filename sent in response to upload
 	useEffect(() => {
 		if (filename) {
 			retrieveData(filename);
 		}
 	}, [filename]);
-	
+
+	// Process the data into headers and array
 	useEffect(() => {
 		if (data.length > 0) {
 			processDataForFrappe(data, ["index", "errors", "valid"]);
 		}
 	}, [data]);
 
+	// Create and populate the table
 	useEffect(() => {
-		if (columns.length > 0 && tableRef.current) {
-			tableRef.current.innerHTML = "";
+		if (columns.length > 0 && tableDivRef.current) {
+			tableDivRef.current.innerHTML = "";
 
-			new DataTable(tableRef.current, {
+			const dataTable = new DataTable(tableDivRef.current, {
 				columns: columns,
-				data:filteredRows
+				data: filteredRows
 			});
+
+			tableRef.current = dataTable;					
 		}
-	},[filteredRows,columns]);
+	}, [filteredRows, columns]);
 
 
 	return (
@@ -191,11 +227,12 @@ function App() {
 			{data.length > 0 && (
 				<div style={{ marginTop: 24 }}>
 					<h4>Sheet Contents</h4>
-					<div ref={tableRef} />
+					<div ref={tableDivRef} />
 					<div style={{ marginBottom: 12 }}>
                         <button onClick={showAllRows} disabled={showFilter === null} style={{ marginRight: 8 }}>Show All</button>
                         <button onClick={() => filterRows(true)} disabled={showFilter === true} style={{ marginRight: 8 }}>Show Valid</button>
-                        <button onClick={() => filterRows(false)} disabled={showFilter === false}>Show Invalid</button>
+						<button onClick={() => filterRows(false)} disabled={showFilter === false}>Show Invalid</button>
+						<button onClick={() => applyStyles()}> Apply styles</button>
 					</div>					
 				</div>
 			)}
