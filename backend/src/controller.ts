@@ -9,6 +9,7 @@ import { fileURLToPath } from "url";
 import { NoSQLDataSource, RDBMSDataSource } from "./db/data-sources.js";
 import { CustomerPost } from "./db/CustomerPost.js";
 import { CustomerMongo } from "./db/CustomerMongo.js";
+import { error } from "console";
 
 
 /* export interface FileRequest extends Request {
@@ -144,4 +145,29 @@ export async function uploadToDatabase(req: Request, res: Response) {
             details: (err as Error).message
         });
     }
+}
+
+export async function revalidate(req: Request, res: Response) {
+    const filename = req.body.filename;
+    const row = req.body.row;
+
+    if (!filename || !row) {
+        res.status(400).json({ error: "Missing data or filename" })
+        return;
+    }
+
+    const data = retrieveObjectFromMemory(filename);
+    if (data && data !== undefined && row !== -1) {
+        const index = data.findIndex(record => row._index === record._index);
+        data[index] = row;
+        const validatedData = validateFileData(data);
+        saveObjectToMemory(filename, validatedData);
+
+        res.status(200).json({ message: "File changes saved" });
+    } else {
+        res.status(400).json({ error: "File data could not be modified" });
+        return
+    }
+
+
 }
