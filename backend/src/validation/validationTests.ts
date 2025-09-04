@@ -3,7 +3,7 @@ import { parse, isValid } from "date-fns";
 
 export function rowvalidator(
     row: Record<string, any>,
-    excludekeys: string[] = ["index", "valid", "errors"],
+    excludekeys: string[] = ["_index", "_valid", "_errors"],
     defaultVal: string = "17:00"
 ): string[] {
     const errorKeys: Set<string> = new Set();
@@ -53,7 +53,7 @@ export function uniquenessValidator(
 
     // Populate value map
     records.forEach(record => {
-        const index = record.index;
+        const index = record._index;
         keys.forEach(key => {
             const value = record[key];
             if (value !== null) {

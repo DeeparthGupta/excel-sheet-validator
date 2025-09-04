@@ -3,10 +3,10 @@ import { rowvalidator, uniquenessValidator } from "./validationTests.js";
 import fs from "fs/promises";
 
 function objectMerge(object1, object2) {
-    fs.writeFile(path.join("uploads","object1.json"), JSON.stringify(object1, null, 2), "utf-8")
+    /* fs.writeFile(path.join("uploads","object1.json"), JSON.stringify(object1, null, 2), "utf-8")
       .catch(console.error);
     fs.writeFile(path.join("uploads","object2.json"), JSON.stringify(object2, null, 2), "utf-8")
-      .catch(console.error);
+      .catch(console.error); */
 
     const object1Keys = Object.keys(object1);
     const object2Keys = Object.keys(object2);
@@ -35,7 +35,7 @@ export function validateFileData(fileData: Record<string,any>[]): Record<string,
         const errors = rowvalidator(record);
         
         if (errors.length > 0) {
-            accumulator[record.index] = errors;
+            accumulator[record._index] = errors;
         }
         
         return accumulator;
@@ -47,16 +47,16 @@ export function validateFileData(fileData: Record<string,any>[]): Record<string,
     Object.keys(allViolations).forEach(indexString => {
         const index = Number(indexString);
         const errorKeys = allViolations[indexString];
-        const row = fileDataCopy.find(r => r.index === index); // Use index value from data
+        const row = fileDataCopy.find(r => r._index === index); // Use index value from data
         
-        row.valid = false;
-        row.errors = errorKeys;
+        row._valid = false;
+        row._errors = errorKeys;
     });
 
     fileDataCopy.forEach(record => {
-        if (!(record.index in allViolations)) {
-            record.valid = true;
-            record.errors = [];
+        if (!(record._index in allViolations)) {
+            record._valid = true;
+            record._errors = [];
         }
     });
 
