@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import path from "path";
 import { convertExcelToJson } from "./services/fileInjestorService.js";
 import multer from "multer";
-import { retrieveFileFromMemory, saveFileToMemory } from "./services/fileStorageService.js";
+import { retrieveObjectFromMemory, saveObjectToMemory } from "./services/objectStorageService.js";
 import { validateFileData } from "./validation/validators.js";
 import fs from "fs/promises";
 import { fileURLToPath } from "url";
@@ -50,7 +50,7 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
             const validatedFileName = path.basename(outputPath, ".json") + "-validated.json";
             const validatedFilePath = path.join(uploadsDir, validatedFileName);
 
-            saveFileToMemory(file.originalname, validatedData);
+            saveObjectToMemory(file.originalname, validatedData);
 
             // Write file to storage
             await fs.writeFile(validatedFilePath, JSON.stringify(validatedData, null, 2), "utf-8");
@@ -77,7 +77,7 @@ export async function retrieveFileData(req: Request, res: Response) {
         return;
     }
 
-    const data = retrieveFileFromMemory(fileName);
+    const data = retrieveObjectFromMemory(fileName);
 
     if (!data) {
         res.status(404).json({ error: "No data for given file name" });
@@ -108,7 +108,7 @@ export async function uploadToDatabase(req: Request, res: Response) {
         return;
     }
 
-    const data = retrieveFileFromMemory(fileName);  
+    const data = retrieveObjectFromMemory(fileName);  
 
     if (!data) {
         res.status(404).json({ error: "Data not found" });
