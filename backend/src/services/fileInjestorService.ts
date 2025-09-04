@@ -47,9 +47,9 @@ export async function convertExcelToJson(
             }, {});
             
             // Add extra keys
-            rowObj.index = rowIndex++;
-            rowObj.valid = null;
-            rowObj.errors = [];
+            rowObj._index = rowIndex++;
+            rowObj._valid = null;
+            rowObj._errors = [];
 
             ws.write((isFirst ? "" : ",") + JSON.stringify(rowObj));
             isFirst = false;

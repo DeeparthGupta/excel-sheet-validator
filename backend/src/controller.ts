@@ -92,7 +92,7 @@ export async function retrieveFileData(req: Request, res: Response) {
 }
 
 const rowToEntity = (row: any) => ({
-    serial_number: row.index,
+    serial_number: row._index,
     customer_name: row["Customer Name"],
     number: row.Number ?? row.number,
     email: row.Email ?? row.email,
@@ -115,7 +115,7 @@ export async function uploadToDatabase(req: Request, res: Response) {
         return;
     }
 
-    const validRecords = data.filter((row: any) => row.valid);
+    const validRecords = data.filter((row: any) => row._valid);
 
     if (!(validRecords.length > 0)) {
         res.status(400).json({ message: "No valid records to upload" });

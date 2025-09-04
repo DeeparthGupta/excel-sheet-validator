@@ -1,6 +1,5 @@
 export function applyTableStyles(datatable) {
     if (!datatable) return;
-    
 
   datatable.style.setStyle('.row-ok td', {
     backgroundColor: '#a1f1b4' 

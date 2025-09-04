@@ -1,5 +1,5 @@
 import path from "path";
-import { convertExcelToJson } from "./../src/fileInjestor.js";
+import { convertExcelToJson } from "./../src/services/fileInjestorService";
 
 async function main() {
     const fileName = process.argv[2];
