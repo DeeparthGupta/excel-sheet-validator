@@ -68,19 +68,23 @@ function App() {
 	}
 
 	const processDataForFrappe = (data,hiddenColumns) => {
-		const columns = Object.keys(data[0] || {})
+		const columns = [
+			{ name: "Customer Name", id: "Customer Name" },
+			{ name: "Number", id: "Number" },
+			{ name: "Email", id: "Email" },
+			{ name: "Time", id: "Time" },
+		]/* Object.keys(data[0] || {})
 			.filter(key => !hiddenColumns.includes(key))
 			.map((key) => ({
 				name: key,
-				editable: true,
 				id: key,
-			}));
+			})); */
 
-		const rows = data.map(row =>
+		const rows = data/* .map(row =>
 			columns.map(col =>
 				String(row[col.id] ?? "")
 			)
-		);
+		) */;
 		
 		console.log("Columns:", JSON.stringify(columns,null,2));
 		console.log("Rows:", JSON.stringify(rows,null,2));
@@ -92,19 +96,13 @@ function App() {
 
 	const filterRows = (isValid) => {
         setShowFilter(isValid);
-        const filtered = data
-            .filter(row => row.valid === isValid)
-            .map(row =>
-                columns.map(col =>
-                    String(row[col.id] ?? "")
-                )
-            );
-        setFilteredRows(filtered);
+		const filtered = rows.filter(row => row._valid === isValid);     
+		setFilteredRows(filtered);
 	};
 	
 	const showAllRows = () => {
         setShowFilter(null);
-        setFilteredRows(rows);
+		setFilteredRows(rows);
 	};
 	
 	const dbSelection = (e) => {
@@ -129,21 +127,44 @@ function App() {
 	}
 
 
-	const applyStyleToRow = (rowData) => {
+	const applyStyleToRow = (rowData, rowIndex) => {
+		
+		// Clear all styles
+		/* columns.forEach((_, colIndex) => {
+			tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}.dt-cell--col-${colIndex}`, {
+				background: 'transparent'
+			});
+			console.log(`Cleared cell ${colIndex} of row ${rowIndex}`)
+		});
 
-		if (rowData.valid) {
-			tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowData.index)}`, {
+		tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}`, {
+			background: 'transparent'
+		});
+		console.log(`Cleared row ${rowIndex}`) */
+
+		// Set styles
+		if (rowData._valid) {
+			tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}`, {
+				background: 'transparent'
+			});
+			tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}`, {
 				background: '#77e977ff'
 			});
-		} else if(!rowData.valid){
-			tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowData.index)}`, {
+			console.log(`Set row ${rowIndex} colors`);
+		} else if (!rowData._valid) {
+			tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}`, {
+				background: '#transparent'
+			});
+			tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}`, {
 				background: '#f0b6b6ff'
 			});
-
-			rowData.errors.forEach(key => {
-				const index = columns.findIndex(col => col.id === key)+1;
-				console.log(index);
-				tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowData.index)}.dt-cell--col-${index}`, {
+			console.log(`Set row ${rowIndex} to red`);
+			rowData._errors.forEach(key => {
+				const columnIndex = columns.findIndex(col => col.id === key);
+				tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}.dt-cell--col-${columnIndex}`, {
+					background: 'transparent',
+				});
+				tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}.dt-cell--col-${columnIndex}`, {
 					background: '#f72424ff',
 				});
 			});
@@ -151,9 +172,10 @@ function App() {
 		
 	}
 
-	const applyStyles = () => {
-		data.forEach(rowData => {
-			applyStyleToRow(rowData);
+
+	const applyStyles = (tableData) => {
+		tableData.forEach((rowData, rowIndex) => {
+			applyStyleToRow(rowData, rowIndex);
 		});
 	}
 
@@ -167,7 +189,7 @@ function App() {
 	// Process the data into headers and array
 	useEffect(() => {
 		if (data.length > 0) {
-			processDataForFrappe(data, ["index", "errors", "valid"]);
+			processDataForFrappe(data, []);
 		}
 	}, [data]);
 
@@ -178,12 +200,17 @@ function App() {
 
 			const dataTable = new DataTable(tableDivRef.current, {
 				columns: columns,
-				data: filteredRows
+				data: filteredRows,
+				serialNoColumn: false
 			});
 
 			tableRef.current = dataTable;					
 		}
 	}, [filteredRows, columns]);
+
+	useEffect(() => {
+		applyStyles(filteredRows);
+	},[filteredRows]);
 
 
 	return (
@@ -231,8 +258,7 @@ function App() {
 					<div style={{ marginBottom: 12 }}>
                         <button onClick={showAllRows} disabled={showFilter === null} style={{ marginRight: 8 }}>Show All</button>
                         <button onClick={() => filterRows(true)} disabled={showFilter === true} style={{ marginRight: 8 }}>Show Valid</button>
-						<button onClick={() => filterRows(false)} disabled={showFilter === false}>Show Invalid</button>
-						<button onClick={() => applyStyles()}> Apply styles</button>
+						<button onClick={() => filterRows(false)} disabled={showFilter === false} style={{ marginRight: 8 }}>Show Invalid</button>
 					</div>					
 				</div>
 			)}
