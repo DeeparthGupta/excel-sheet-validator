@@ -159,12 +159,9 @@ function App() {
 			//console.log(`Set row ${rowIndex} to red`);
 			rowData._errors.forEach(key => {
 				const columnIndex = columns.findIndex(col => col.id === key);
-				tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}.dt-cell--col-${columnIndex}`, {
-					background: 'transparent',
-				});
-				tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}.dt-cell--col-${columnIndex}`, {
-					background: '#f72424ff',
-				});
+				const cellSelector = `.dt-cell--row-${Number(rowIndex)}.dt-cell--col-${columnIndex}`;
+				const cells = document.querySelectorAll(cellSelector);
+				cells.forEach(cell => cell.style.background = '#f72424ff');
 			});
 		}
 		
@@ -226,50 +223,55 @@ function App() {
 	// Create and populate the table
 	useEffect(() => {
 		if (columns.length > 0 && tableDivRef.current) {
-			tableDivRef.current.innerHTML = "";
+			if (tableRef.current){
+				tableRef.current.refresh(filteredRows, columns);
+				setTimeout(() => applyStyles(filteredRows), 0);
+			} else {
+				tableRef.current = new DataTable(tableDivRef.current, {
+					columns: columns,
+					data: filteredRows,
+					serialNoColumn: false,
+					getEditor(colIndex, rowIndex, value, parent, column, row, rowdata) {
+						const $input = document.createElement('input');
+						$input.type = 'text';
+						$input.value = value;
+						parent.appendChild($input)
 
-			tableRef.current = new DataTable(tableDivRef.current, {
-				columns: columns,
-				data: filteredRows,
-				serialNoColumn: false,
-				getEditor(colIndex, rowIndex, value, parent, column, row, rowdata) {
-					const $input = document.createElement('input');
-					$input.type = 'text';
-					$input.value = value;
-					parent.appendChild($input)
+						return {
+							initValue(value) {
+								$input.value = value;
+								$input.focus();
+							},
+							setValue(value) {
+								$input.value = value;
 
-					return {
-						initValue(value) {
-							$input.value = value;
-							$input.focus();
-						},
-						setValue(value) {
-							$input.value = value;
-
-							/* console.log(`Row: ${JSON.stringify(row, null, 2)} \n 
-							Value: ${$input.value} \n 
-							Column: ${JSON.stringify(column, null, 2)} \n 
-							Data: ${JSON.stringify(rowdata, null, 2)} \n
-							ColIndex: ${colIndex} RowIndex: ${rowIndex}`); */
-						},
-						getValue(value) {
-							const rowCopy = { ...rowdata };
-							rowCopy[column["id"]] = $input.value;
-							revalidate(rowCopy);
-							return $input.value;
-							
+								/* console.log(`Row: ${JSON.stringify(row, null, 2)} \n 
+								Value: ${$input.value} \n 
+								Column: ${JSON.stringify(column, null, 2)} \n 
+								Data: ${JSON.stringify(rowdata, null, 2)} \n
+								ColIndex: ${colIndex} RowIndex: ${rowIndex}`); */
+							},
+							getValue(value) {
+								const rowCopy = { ...rowdata };
+								rowCopy[column["id"]] = $input.value;
+								revalidate(rowCopy);
+								return $input.value;
+								
+							}
 						}
 					}
-				}
-			});	
-			
+				});
+				setTimeout(() => applyStyles(filteredRows), 0);
+			}	
 
 		}
 	}, [filteredRows, columns]);
 
-	useEffect(() => {
-		applyStyles(filteredRows);
-	},[filteredRows]);
+	/* useEffect(() => {
+		if(tableRef.current && filteredRows > 0){
+			applyStyles(filteredRows);
+		}
+	},[filteredRows]); */
 
 
 	return (
