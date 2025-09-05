@@ -12,7 +12,6 @@ function App() {
   	const [data, setData] = useState([]);
 	const [columns, setColumns] = useState([]);
 	const [filename, setFileName] = useState("");
-	const [rows, setRows] = useState([]);
 	const [filteredRows, setFilteredRows] = useState([]);
 	const [showFilter, setShowFilter] = useState(null);
 	const [uploadTarget, setuploadTarget] = useState("postgres");
@@ -80,7 +79,7 @@ function App() {
 				id: key,
 			})); */
 
-		const rows = data/* .map(row =>
+		/*const rows = data .map(row =>
 			columns.map(col =>
 				String(row[col.id] ?? "")
 			)
@@ -90,19 +89,18 @@ function App() {
 		//console.log("Rows:", JSON.stringify(rows,null,2));
 
 		setColumns(columns);
-		setRows(rows);
-		setFilteredRows(rows)
+		setFilteredRows(data)
 	}
 
 	const filterRows = (isValid) => {
         setShowFilter(isValid);
-		const filtered = rows.filter(row => row._valid === isValid);     
+		const filtered = data.filter(row => row._valid === isValid);     
 		setFilteredRows(filtered);
 	};
 	
 	const showAllRows = () => {
         setShowFilter(null);
-		setFilteredRows(rows);
+		setFilteredRows(data);
 	};
 	
 	const dbSelection = (e) => {
@@ -189,6 +187,7 @@ function App() {
 	} */
 
 	const revalidate = async (modRow) => {
+		console.log(`Filename: ${filename}`);
 		try {
 			const response = await fetch(`${targetServer}/update`, {
 				method: "POST",
@@ -200,7 +199,7 @@ function App() {
 			});
 			const result = await response.json();
 			if (response.status === 200) {
-				setResult("Data updated on the server");
+				setResult(result.message);
 				await retrieveData(filename);
 			} else {
 				setResult(`Update failed: ${result.error}`);
@@ -227,36 +226,43 @@ function App() {
 	// Create and populate the table
 	useEffect(() => {
 		if (columns.length > 0 && tableDivRef.current) {
-			if (!tableRef.current) {
-				tableRef.current = new DataTable(tableDivRef.current, {
-					columns: columns,
-					data: filteredRows,
-					serialNoColumn: false,
-					getEditor(colIndex, rowIndex, value, parent, column, row, data) {
-						const $input = document.createElement('input');
-						$input.type = 'text';
-						$input.value = value;
-						parent.appendChild($input)
+			tableDivRef.current.innerHTML = "";
 
-						return {
-							initValue(value) {
-								$input.value = value;
-								$input.focus();
-							},
-							setValue(value) {
-								$input.value = value;
-							},
-							getValue(value) {
-								console.log(`Row: ${JSON.stringify(row,null,2)}`);
-								console.log(`Value: ${$input.value}`);
-								return $input.value;
-							}
+			tableRef.current = new DataTable(tableDivRef.current, {
+				columns: columns,
+				data: filteredRows,
+				serialNoColumn: false,
+				getEditor(colIndex, rowIndex, value, parent, column, row, rowdata) {
+					const $input = document.createElement('input');
+					$input.type = 'text';
+					$input.value = value;
+					parent.appendChild($input)
+
+					return {
+						initValue(value) {
+							$input.value = value;
+							$input.focus();
+						},
+						setValue(value) {
+							$input.value = value;
+
+							/* console.log(`Row: ${JSON.stringify(row, null, 2)} \n 
+							Value: ${$input.value} \n 
+							Column: ${JSON.stringify(column, null, 2)} \n 
+							Data: ${JSON.stringify(rowdata, null, 2)} \n
+							ColIndex: ${colIndex} RowIndex: ${rowIndex}`); */
+						},
+						getValue(value) {
+							const rowCopy = { ...rowdata };
+							rowCopy[column["id"]] = $input.value;
+							revalidate(rowCopy);
+							return $input.value;
+							
 						}
 					}
-				});
-			} else {
-				tableRef.current.refresj({ filteredRows, columns });
-			}		
+				}
+			});	
+			
 
 		}
 	}, [filteredRows, columns]);

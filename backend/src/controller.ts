@@ -9,8 +9,7 @@ import { fileURLToPath } from "url";
 import { NoSQLDataSource, RDBMSDataSource } from "./db/data-sources.js";
 import { CustomerPost } from "./db/CustomerPost.js";
 import { CustomerMongo } from "./db/CustomerMongo.js";
-import { error } from "console";
-
+import { isEqual } from "lodash-es";
 
 /* export interface FileRequest extends Request {
   file: Express.Multer.File;
@@ -148,6 +147,7 @@ export async function uploadToDatabase(req: Request, res: Response) {
 }
 
 export async function revalidate(req: Request, res: Response) {
+    console.log("req.body:", req.body);
     const filename = req.body.filename;
     const row = req.body.row;
 
@@ -157,17 +157,24 @@ export async function revalidate(req: Request, res: Response) {
     }
 
     const data = retrieveObjectFromMemory(filename);
+
     if (data && data !== undefined && row !== -1) {
         const index = data.findIndex(record => row._index === record._index);
         data[index] = row;
         const validatedData = validateFileData(data);
+
+        console.log(`Validated BEFORE store ${JSON.stringify(validatedData, null, 2)}`);
         saveObjectToMemory(filename, validatedData);
+
+        const retrievedData = retrieveObjectFromMemory(filename)
+        console.log(`Retrieved AFTER store: ${JSON.stringify(retrievedData, null, 2)}`);
+
+        const equality = isEqual(validatedData, retrievedData);
+        console.log(`Comparison: Objects are ${equality ? "EQUAL" : "DIFFERENT"}`);
 
         res.status(200).json({ message: "File changes saved" });
     } else {
         res.status(400).json({ error: "File data could not be modified" });
         return
     }
-
-
 }
