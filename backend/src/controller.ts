@@ -2,14 +2,14 @@ import type { Request, Response } from "express";
 import path from "path";
 import { convertExcelToJson } from "./services/fileInjestorService.js";
 import multer from "multer";
-import { retrieveFileFromMemory, saveFileToMemory } from "./services/fileStorageService.js";
+import { retrieveObjectFromMemory, saveObjectToMemory } from "./services/objectStorageService.js";
 import { validateFileData } from "./validation/validators.js";
 import fs from "fs/promises";
 import { fileURLToPath } from "url";
 import { NoSQLDataSource, RDBMSDataSource } from "./db/data-sources.js";
 import { CustomerPost } from "./db/CustomerPost.js";
 import { CustomerMongo } from "./db/CustomerMongo.js";
-
+import { isEqual } from "lodash-es";
 
 /* export interface FileRequest extends Request {
   file: Express.Multer.File;
@@ -50,7 +50,7 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
             const validatedFileName = path.basename(outputPath, ".json") + "-validated.json";
             const validatedFilePath = path.join(uploadsDir, validatedFileName);
 
-            saveFileToMemory(file.originalname, validatedData);
+            saveObjectToMemory(file.originalname, validatedData);
 
             // Write file to storage
             await fs.writeFile(validatedFilePath, JSON.stringify(validatedData, null, 2), "utf-8");
@@ -77,7 +77,7 @@ export async function retrieveFileData(req: Request, res: Response) {
         return;
     }
 
-    const data = retrieveFileFromMemory(fileName);
+    const data = retrieveObjectFromMemory(fileName);
 
     if (!data) {
         res.status(404).json({ error: "No data for given file name" });
@@ -108,7 +108,7 @@ export async function uploadToDatabase(req: Request, res: Response) {
         return;
     }
 
-    const data = retrieveFileFromMemory(fileName);  
+    const data = retrieveObjectFromMemory(fileName);  
 
     if (!data) {
         res.status(404).json({ error: "Data not found" });
@@ -143,5 +143,38 @@ export async function uploadToDatabase(req: Request, res: Response) {
             error: "DB upload failed",
             details: (err as Error).message
         });
+    }
+}
+
+export async function revalidate(req: Request, res: Response) {
+    console.log("req.body:", req.body);
+    const filename = req.body.filename;
+    const row = req.body.row;
+
+    if (!filename || !row) {
+        res.status(400).json({ error: "Missing data or filename" })
+        return;
+    }
+
+    const data = retrieveObjectFromMemory(filename);
+
+    if (data && data !== undefined && row !== -1) {
+        const index = data.findIndex(record => row._index === record._index);
+        data[index] = row;
+        const validatedData = validateFileData(data);
+
+        console.log(`Validated BEFORE store ${JSON.stringify(validatedData, null, 2)}`);
+        saveObjectToMemory(filename, validatedData);
+
+        const retrievedData = retrieveObjectFromMemory(filename)
+        console.log(`Retrieved AFTER store: ${JSON.stringify(retrievedData, null, 2)}`);
+
+        const equality = isEqual(validatedData, retrievedData);
+        console.log(`Comparison: Objects are ${equality ? "EQUAL" : "DIFFERENT"}`);
+
+        res.status(200).json({ message: "File changes saved" });
+    } else {
+        res.status(400).json({ error: "File data could not be modified" });
+        return
     }
 }

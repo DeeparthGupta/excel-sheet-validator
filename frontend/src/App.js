@@ -12,7 +12,6 @@ function App() {
   	const [data, setData] = useState([]);
 	const [columns, setColumns] = useState([]);
 	const [filename, setFileName] = useState("");
-	const [rows, setRows] = useState([]);
 	const [filteredRows, setFilteredRows] = useState([]);
 	const [showFilter, setShowFilter] = useState(null);
 	const [uploadTarget, setuploadTarget] = useState("postgres");
@@ -40,7 +39,7 @@ function App() {
 
 			if (response.ok && responseData.fileName) {
 				setFileName(responseData.fileName);
-				console.log(`File Name: ${responseData.fileName}`);
+				//console.log(`File Name: ${responseData.fileName}`);
 			}
 
 		} catch (err) {
@@ -80,29 +79,28 @@ function App() {
 				id: key,
 			})); */
 
-		const rows = data/* .map(row =>
+		/*const rows = data .map(row =>
 			columns.map(col =>
 				String(row[col.id] ?? "")
 			)
 		) */;
 		
-		console.log("Columns:", JSON.stringify(columns,null,2));
-		console.log("Rows:", JSON.stringify(rows,null,2));
+		//console.log("Columns:", JSON.stringify(columns,null,2));
+		//console.log("Rows:", JSON.stringify(rows,null,2));
 
 		setColumns(columns);
-		setRows(rows);
-		setFilteredRows(rows)
+		setFilteredRows(data)
 	}
 
 	const filterRows = (isValid) => {
         setShowFilter(isValid);
-		const filtered = rows.filter(row => row._valid === isValid);     
+		const filtered = data.filter(row => row._valid === isValid);     
 		setFilteredRows(filtered);
 	};
 	
 	const showAllRows = () => {
         setShowFilter(null);
-		setFilteredRows(rows);
+		setFilteredRows(data);
 	};
 	
 	const dbSelection = (e) => {
@@ -150,7 +148,7 @@ function App() {
 			tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}`, {
 				background: '#77e977ff'
 			});
-			console.log(`Set row ${rowIndex} colors`);
+			//console.log(`Set row ${rowIndex} colors`);
 		} else if (!rowData._valid) {
 			tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}`, {
 				background: '#transparent'
@@ -158,15 +156,12 @@ function App() {
 			tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}`, {
 				background: '#f0b6b6ff'
 			});
-			console.log(`Set row ${rowIndex} to red`);
+			//console.log(`Set row ${rowIndex} to red`);
 			rowData._errors.forEach(key => {
 				const columnIndex = columns.findIndex(col => col.id === key);
-				tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}.dt-cell--col-${columnIndex}`, {
-					background: 'transparent',
-				});
-				tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}.dt-cell--col-${columnIndex}`, {
-					background: '#f72424ff',
-				});
+				const cellSelector = `.dt-cell--row-${Number(rowIndex)}.dt-cell--col-${columnIndex}`;
+				const cells = document.querySelectorAll(cellSelector);
+				cells.forEach(cell => cell.style.background = '#f72424ff');
 			});
 		}
 		
@@ -178,6 +173,38 @@ function App() {
 			applyStyleToRow(rowData, rowIndex);
 		});
 	}
+
+	/* const updateData = (modRow) =>{
+		const index = data.findIndex(row => row.Number === modRow.Number);
+		if (index !== -1) {
+			const dataCopy = [...data];
+			dataCopy[index] = modRow;
+			return dataCopy;
+		}
+	} */
+
+	const revalidate = async (modRow) => {
+		console.log(`Filename: ${filename}`);
+		try {
+			const response = await fetch(`${targetServer}/update`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					filename: filename,
+					row: modRow
+				})
+			});
+			const result = await response.json();
+			if (response.status === 200) {
+				setResult(result.message);
+				await retrieveData(filename);
+			} else {
+				setResult(`Update failed: ${result.error}`);
+			}
+		} catch (err) {
+			setResult(`Error sending update: ${err}`)
+		}
+	};
 
 	// Get uploaded file data using the filename sent in response to upload
 	useEffect(() => {
@@ -196,21 +223,55 @@ function App() {
 	// Create and populate the table
 	useEffect(() => {
 		if (columns.length > 0 && tableDivRef.current) {
-			tableDivRef.current.innerHTML = "";
+			if (tableRef.current){
+				tableRef.current.refresh(filteredRows, columns);
+				setTimeout(() => applyStyles(filteredRows), 0);
+			} else {
+				tableRef.current = new DataTable(tableDivRef.current, {
+					columns: columns,
+					data: filteredRows,
+					serialNoColumn: false,
+					getEditor(colIndex, rowIndex, value, parent, column, row, rowdata) {
+						const $input = document.createElement('input');
+						$input.type = 'text';
+						$input.value = value;
+						parent.appendChild($input)
 
-			const dataTable = new DataTable(tableDivRef.current, {
-				columns: columns,
-				data: filteredRows,
-				serialNoColumn: false
-			});
+						return {
+							initValue(value) {
+								$input.value = value;
+								$input.focus();
+							},
+							setValue(value) {
+								$input.value = value;
 
-			tableRef.current = dataTable;					
+								/* console.log(`Row: ${JSON.stringify(row, null, 2)} \n 
+								Value: ${$input.value} \n 
+								Column: ${JSON.stringify(column, null, 2)} \n 
+								Data: ${JSON.stringify(rowdata, null, 2)} \n
+								ColIndex: ${colIndex} RowIndex: ${rowIndex}`); */
+							},
+							getValue(value) {
+								const rowCopy = { ...rowdata };
+								rowCopy[column["id"]] = $input.value;
+								revalidate(rowCopy);
+								return $input.value;
+								
+							}
+						}
+					}
+				});
+				setTimeout(() => applyStyles(filteredRows), 0);
+			}	
+
 		}
 	}, [filteredRows, columns]);
 
-	useEffect(() => {
-		applyStyles(filteredRows);
-	},[filteredRows]);
+	/* useEffect(() => {
+		if(tableRef.current && filteredRows > 0){
+			applyStyles(filteredRows);
+		}
+	},[filteredRows]); */
 
 
 	return (
