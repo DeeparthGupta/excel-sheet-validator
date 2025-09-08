@@ -1,6 +1,6 @@
 import { useRef } from "react";
 
-function FileUploader({targetServer, setUploading, setFileName, uploading, setResult}) {
+function FileUploadComponent({targetServer, setUploading, setFileName, uploading, setResult}) {
     const fileInputRef = useRef();
 
     const fileUpload = async () => {
@@ -44,4 +44,4 @@ function FileUploader({targetServer, setUploading, setFileName, uploading, setRe
     );
 }
 
-export default FileUploader;
+export default FileUploadComponent;

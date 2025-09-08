@@ -11,6 +11,7 @@ export const RDBMSDataSource = new DataSource({
     password: "root",
     database: "customer_data",
     synchronize: true,
+    logging:true,
     entities: [CustomerPost]
 });
 
@@ -21,4 +22,5 @@ export const NoSQLDataSource = new DataSource({
     database: "customer_data",
     entities: [CustomerMongo],
     synchronize: true,
+    logging: true
 });

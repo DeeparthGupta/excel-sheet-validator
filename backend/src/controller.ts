@@ -9,7 +9,6 @@ import { fileURLToPath } from "url";
 import { NoSQLDataSource, RDBMSDataSource } from "./db/data-sources.js";
 import { CustomerPost } from "./db/CustomerPost.js";
 import { CustomerMongo } from "./db/CustomerMongo.js";
-import { isEqual } from "lodash-es";
 
 /* export interface FileRequest extends Request {
   file: Express.Multer.File;
@@ -125,18 +124,19 @@ export async function uploadToDatabase(req: Request, res: Response) {
     try {
         let repo;
         if (db === "postgres") {
-            if (!NoSQLDataSource.isInitialized) await NoSQLDataSource.initialize();
-            repo = NoSQLDataSource.getRepository(CustomerMongo);
+            if (!RDBMSDataSource.isInitialized) await RDBMSDataSource.initialize();
+            repo = RDBMSDataSource.getRepository(CustomerMongo);
         }
         else {
-            if (!RDBMSDataSource.isInitialized) await RDBMSDataSource.initialize();
-            repo = RDBMSDataSource.getRepository(CustomerPost);
+            if (!NoSQLDataSource.isInitialized) await NoSQLDataSource.initialize();
+            repo = NoSQLDataSource.getRepository(CustomerPost);
         }
 
         const entities = validRecords.map(rowToEntity).map(row => repo.create(row));
         await repo.insert(entities);
+        
         res.status(200).json({
-            message: `Successfully added ${entities.length} records to mongodb`
+            message: `Successfully added ${entities.length} records to ${db}`
         })
     } catch (err) {
         res.status(500).json({
@@ -147,7 +147,7 @@ export async function uploadToDatabase(req: Request, res: Response) {
 }
 
 export async function revalidate(req: Request, res: Response) {
-    console.log("req.body:", req.body);
+    //console.log("req.body:", req.body);
     const filename = req.body.filename;
     const row = req.body.row;
 
