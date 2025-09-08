@@ -85,3 +85,31 @@ export function uniquenessValidator(
     });
     return result;
 }
+
+export function rowUniquenessTest(
+    uniquenessMap: Map<string, Map<any, Set<number>>>,
+    uniqueFields: string[],
+    checkrow: Record<string, any>,
+): string[]{
+    if (uniqueFields.length === 0) return [];
+    
+    const uniquenessViolations = [];
+    uniqueFields.forEach(fieldName => {
+        const regularizedFieldName = fieldName.toLowerCase();
+        let fieldMap = uniquenessMap.get(regularizedFieldName);
+        if (!fieldMap) {
+            fieldMap = new Map<any, Set<number>>();
+            uniquenessMap.set(regularizedFieldName, fieldMap);
+        }
+        const value = checkrow.get(fieldName)
+        if (![null, undefined].includes(value)) {
+            if (!fieldMap.has(value)) {
+                fieldMap.set(value, new Set<number>());
+            }
+            const indexSet = fieldMap.get(value)!;
+            indexSet.add(checkrow._index);
+            if (indexSet.size > 1) uniquenessViolations.push[fieldName];
+        }
+    });
+    return uniquenessViolations
+}
