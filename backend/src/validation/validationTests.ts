@@ -18,12 +18,17 @@ export function rowvalidator(
             } else {
                 if (key.toLowerCase() === "time" && !timeValidator(row[key])) row[key] = defaultVal;
                 if (key.toLowerCase() === "number" && !rangeValidator(row[key])) errorKeys.add(key);
+                if (["email", "e-mail"].includes(key.toLowerCase()) && !mailValidator(row[key])) errorKeys.add(key);
             }
             
         })
     return Array.from(errorKeys);
 }
 
+function mailValidator(testEmail: string):boolean {
+    const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+    return emailRegex.test(testEmail);
+}
 
 function rangeValidator(
     number: number,

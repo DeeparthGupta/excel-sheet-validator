@@ -147,6 +147,7 @@ function App() {
 				const columnIndex = columns.findIndex(col => col.id === key);
 				const cellSelector = `.dt-cell--row-${Number(rowIndex)}.dt-cell--col-${columnIndex}`;
 				const cells = document.querySelectorAll(cellSelector);
+				cells.forEach(cell => cell.style.background = 'transparent');
 				cells.forEach(cell => cell.style.background = '#f72424ff');
 			});
 		}
