@@ -1,54 +1,23 @@
 import React, { useEffect, useRef, useState } from "react";
 import "frappe-datatable/dist/frappe-datatable.min.css";
 import DataTable from "frappe-datatable";
+import FileUploader from "./components/FileUploader";
 
 function App() {
-	const targetServer = "http://localhost:3001";
 	const fileInputRef = useRef();
 	const tableDivRef = useRef();
 	const tableRef = useRef();
-  	const [result, setResult] = useState("");
-  	const [uploading, setUploading] = useState(false);
-  	const [data, setData] = useState([]);
+	const [result, setResult] = useState("");
+	const [uploading, setUploading] = useState(false);
+	const [data, setData] = useState([]);
 	const [columns, setColumns] = useState([]);
 	const [filename, setFileName] = useState("");
 	const [filteredRows, setFilteredRows] = useState([]);
 	const [showFilter, setShowFilter] = useState(null);
 	const [uploadTarget, setuploadTarget] = useState("postgres");
 	const [uploadDbResult, setUploadDbResult] = useState("");
-
-
-  	const fileUpload = async () => {
-		const file = fileInputRef.current.files[0];
-		if (!file) {
-	  		alert("Please select a file.");
-	  		return;
-		}
-		const formData = new FormData();
-		formData.append("file", file);
-
-		setUploading(true);
-		setResult("Uploading...");
-
-		try {
-	  		const response = await fetch(`${targetServer}/upload`, {
-				method: "POST",
-				body: formData,
-	  		});
-			const responseData = await response.json();
-
-			if (response.ok && responseData.fileName) {
-				setFileName(responseData.fileName);
-				//console.log(`File Name: ${responseData.fileName}`);
-			}
-
-		} catch (err) {
-	  		setResult("Upload failed: " + err);
-		} finally {
-			setUploading(false);
-			setResult("Upload Successful");
-		}
-  	};
+	
+	const targetServer = process.env.REACT_APP_TARGET_SERVER || "http://localhost:3001";
 
 	const retrieveData = async (filename) => {
 		try {
@@ -258,10 +227,13 @@ function App() {
 	return (
 		<div style={{ maxWidth: 600, display:"flex" }}>
 			<h2>Upload Excel File</h2>
-			<input type="file" ref={fileInputRef} disabled={uploading} accept=".xlsx" />
-			<button onClick={fileUpload} disabled={uploading} style={{ marginLeft: 8, border:"1px solid #000" }}>
-				{uploading ? "Uploading..." : "Upload"}
-			</button>
+			<FileUploader
+				targetServer={targetServer}
+				setUploading={setUploading}
+				setFileName={setFileName}
+				uploading={setUploading}
+				setResult={setResult}
+			/>
 			<pre style={{ background: "#f4f4f4", padding: 16, marginTop: 24 }}>{result}</pre>
 			<div style={{margin: "16px 0"}}>
 						<label>
