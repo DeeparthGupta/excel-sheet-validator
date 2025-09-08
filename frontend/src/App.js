@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import "frappe-datatable/dist/frappe-datatable.min.css";
 import FileUploadComponent from "./components/FileUploadComponent";
 import DataTableComponent from "./components/DataTableComponent";
 import DBUploadComponent from "./components/DBUploadComponent";
