@@ -163,14 +163,14 @@ export async function revalidate(req: Request, res: Response) {
         data[index] = row;
         const validatedData = validateFileData(data);
 
-        console.log(`Validated BEFORE store ${JSON.stringify(validatedData, null, 2)}`);
+        //console.log(`Validated BEFORE store ${JSON.stringify(validatedData, null, 2)}`);
         saveObjectToMemory(filename, validatedData);
 
-        const retrievedData = retrieveObjectFromMemory(filename)
-        console.log(`Retrieved AFTER store: ${JSON.stringify(retrievedData, null, 2)}`);
+        //const retrievedData = retrieveObjectFromMemory(filename)
+        //console.log(`Retrieved AFTER store: ${JSON.stringify(retrievedData, null, 2)}`);
 
-        const equality = isEqual(validatedData, retrievedData);
-        console.log(`Comparison: Objects are ${equality ? "EQUAL" : "DIFFERENT"}`);
+        /* const equality = isEqual(validatedData, retrievedData);
+        console.log(`Comparison: Objects are ${equality ? "EQUAL" : "DIFFERENT"}`); */
 
         res.status(200).json({ message: "File changes saved" });
     } else {

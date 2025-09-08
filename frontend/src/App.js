@@ -126,20 +126,6 @@ function App() {
 
 
 	const applyStyleToRow = (rowData, rowIndex) => {
-		
-		// Clear all styles
-		/* columns.forEach((_, colIndex) => {
-			tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}.dt-cell--col-${colIndex}`, {
-				background: 'transparent'
-			});
-			console.log(`Cleared cell ${colIndex} of row ${rowIndex}`)
-		});
-
-		tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}`, {
-			background: 'transparent'
-		});
-		console.log(`Cleared row ${rowIndex}`) */
-
 		// Set styles
 		if (rowData._valid) {
 			tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}`, {
@@ -148,7 +134,6 @@ function App() {
 			tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}`, {
 				background: '#77e977ff'
 			});
-			//console.log(`Set row ${rowIndex} colors`);
 		} else if (!rowData._valid) {
 			tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}`, {
 				background: '#transparent'
@@ -156,11 +141,13 @@ function App() {
 			tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}`, {
 				background: '#f0b6b6ff'
 			});
-			//console.log(`Set row ${rowIndex} to red`);
+
+			// Use direct DOM manipulation because cell styles don't change after initial change.
 			rowData._errors.forEach(key => {
 				const columnIndex = columns.findIndex(col => col.id === key);
 				const cellSelector = `.dt-cell--row-${Number(rowIndex)}.dt-cell--col-${columnIndex}`;
 				const cells = document.querySelectorAll(cellSelector);
+				cells.forEach(cell => cell.style.background = 'transparent');
 				cells.forEach(cell => cell.style.background = '#f72424ff');
 			});
 		}
@@ -244,12 +231,6 @@ function App() {
 							},
 							setValue(value) {
 								$input.value = value;
-
-								/* console.log(`Row: ${JSON.stringify(row, null, 2)} \n 
-								Value: ${$input.value} \n 
-								Column: ${JSON.stringify(column, null, 2)} \n 
-								Data: ${JSON.stringify(rowdata, null, 2)} \n
-								ColIndex: ${colIndex} RowIndex: ${rowIndex}`); */
 							},
 							getValue(value) {
 								const rowCopy = { ...rowdata };
