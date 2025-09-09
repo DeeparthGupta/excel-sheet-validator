@@ -1,5 +1,10 @@
 import { parse, isValid } from "date-fns";
 
+export type UniquenessViolation = {
+    field: string;
+    value: any;
+    indices: number[];
+};
 
 export function rowvalidator(
     row: Record<string, any>,
@@ -88,28 +93,46 @@ export function uniquenessValidator(
 
 export function rowUniquenessTest(
     uniquenessMap: Map<string, Map<any, Set<number>>>,
-    uniqueFields: string[],
+    uniqueFields: string[] = ["Email", "Number"],
     checkrow: Record<string, any>,
-): string[]{
+): UniquenessViolation[]{
     if (uniqueFields.length === 0) return [];
-    
-    const uniquenessViolations = [];
+
+    const uniquenessViolations: UniquenessViolation[] = [];
     uniqueFields.forEach(fieldName => {
-        const regularizedFieldName = fieldName.toLowerCase();
+        const regularizedFieldName: string = fieldName.toLowerCase();
         let fieldMap = uniquenessMap.get(regularizedFieldName);
         if (!fieldMap) {
             fieldMap = new Map<any, Set<number>>();
             uniquenessMap.set(regularizedFieldName, fieldMap);
         }
-        const value = checkrow.get(fieldName)
+        const value = checkrow[fieldName];
         if (![null, undefined].includes(value)) {
             if (!fieldMap.has(value)) {
                 fieldMap.set(value, new Set<number>());
             }
-            const indexSet = fieldMap.get(value)!;
-            indexSet.add(checkrow._index);
-            if (indexSet.size > 1) uniquenessViolations.push[fieldName];
+            removeIndexFromFieldMap(fieldMap, checkrow._index);
+            const indices = fieldMap.get(value)!;
+            indices.add(checkrow._index);
+            if (indices.size > 1) {
+                uniquenessViolations.push({
+                    field: fieldName,
+                    value: value,
+                    indices: Array.from(indices)
+                });
+            }
         }
     });
     return uniquenessViolations
+}
+
+function removeIndexFromFieldMap(
+    fieldMap: Map<any, Set<number>>,
+    index: number
+): void{
+    fieldMap.forEach((indexSet, value) => {
+        indexSet.delete(index)
+        // Prune the key if the set is empty
+        if (indexSet.size === 0) fieldMap.delete(value);
+    });
 }
