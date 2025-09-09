@@ -2,17 +2,13 @@
   text-align: center;
 }
 .row-ok {
-  background-color: #a1f1b4 !important;
+  background-color: #77e977ff !important;
 }
 
 .row-error {
-  background-color: #eba7ad !important;
+  background-color: #f0b6b6ff !important;
 }
 
 .cell-error {
-  background-color: #c42837 !important;
-}
-
-.hidden-row {
-  display: none !important;
+  background-color: #f72424ff !important;
 }
