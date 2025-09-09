@@ -1,0 +1,14 @@
+.App {
+  text-align: center;
+}
+
+.cell-error {
+  background-color: #f72424ff !important;
+} 
+
+.data-grid-base{
+  height: 600px;
+  width: 800px;
+  max-height: 80vh;
+  overflow: auto;
+}

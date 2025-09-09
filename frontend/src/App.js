@@ -1,64 +1,73 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import FileUploadComponent from "./components/FileUploadComponent";
 import DataTableComponent from "./components/DataTableComponent";
 import DBUploadComponent from "./components/DBUploadComponent";
-import { revalidate, retrieveData, processDataForFrappe } from "./utils";
+import { revalidate, retrieveData, dataDiff } from "./utils";
+
 
 function App() {
 	const [result, setResult] = useState("");
 	const [uploading, setUploading] = useState(false);
 	const [data, setData] = useState([]);
-	const [columns, setColumns] = useState([]);
 	const [filename, setFileName] = useState("");
-	const [filteredRows, setFilteredRows] = useState([]);
-	const [showFilter, setShowFilter] = useState(null);
+	const [filter, setFilter] = useState("all");
+	const gridRef = useRef();
 	
 	const targetServer = process.env.REACT_APP_TARGET_SERVER || "http://localhost:3001";
 
-	const filterRows = (isValid) => {
-		setShowFilter(isValid);
-		const filtered = data.filter(row => row._valid === isValid);     
-		setFilteredRows(filtered);
-	};
+	const excludedFields = ["_valid", "_index", "_errors"];
 
-	const showAllRows = () => {
-		setShowFilter(null);
-		setFilteredRows(data);
-	};
-	
-	const handleRevalidation = async (modrow) => {
-		const { success, message } = await revalidate(modrow, filename, targetServer);
+	/* const allModel = null;
+	const validModel = { _valid: { filterType: "set", values: [true] } };
+	const invalidModel = { _valid: { filterType: "set", values: [false] } };
+ */
+	const handleCellValueChange = async params => {
+		const editedRow = params.data;
+		const { success, message } = await revalidate(editedRow, filename, targetServer);
 		setResult(message);
 		if (success) {
-			const { data, message: retrievalMessage } = await retrieveData(filename, targetServer);
-			setData(data);
+			const { data: newData, message: retrievalMessage } = await retrieveData(filename, targetServer);
+			const changedRows = dataDiff(data, newData);
+			//console.log(`Changed Rows: ${JSON.stringify(changedRows, null, 2)}`);
+
+			if (gridRef.current && gridRef.current.api && changedRows.length > 0) {
+				gridRef.current.api.applyTransaction({ update: changedRows });
+				/* changedRows.forEach(row => {
+					const node = gridRef.current.api.getRowNode(String(row._index));
+					if (node) gridRef.current.api.refreshCells({ rowNodes: [node], force: true });
+				}); */
+				//gridRef.current.api.redrawRows();
+			}
+
 			setResult(retrievalMessage);
+			setData(newData);
 		}
 	};
+
+/* 	const filterGrid = (model = null) => {
+		if (gridRef.current && gridRef.current.api) {
+			gridRef.current.api.setFilterModel(model);
+			setFilter(model);
+		}
+	};
+
+	const isSameModel = (model) => JSON.stringify(filter) === JSON.stringify(model); */
 
 	// Get uploaded file data using the filename sent in response to upload
 	useEffect(() => {
 		if (filename) {
 			(async () => {
 				const { data, message } = await retrieveData(filename, targetServer);
+				console.log(data);
 				setData(data);
 				setResult(message);
 			})();
 		}
 	}, [filename, targetServer]);
 
-	// Process the data into headers and array
-	useEffect(() => {
-		if (data.length > 0 && Array.isArray(data)) {
-			const { columns, filteredRows } = processDataForFrappe(data, []);
-			setColumns(columns);
-			setFilteredRows(filteredRows);
-		}
-	}, [data]);
-
 
 	return (
-		<div style={{ maxWidth: 600, display:"flex" }}>
+		<div style={{ maxWidth: "100%", display:"flex" }}>
 			<h2>Upload Excel File</h2>
 			<FileUploadComponent
 				targetServer={targetServer}
@@ -72,19 +81,38 @@ function App() {
 				filename={filename}
 				targetServer={targetServer}
 			/>
-			{Array.isArray(filteredRows) && filteredRows.length > 0 &&
-			 Array.isArray(columns) && columns.length > 0 && (
+			{Array.isArray(data) && data.length > 0 &&(
 				<div style={{ marginTop: 24 }}>
 					<h4>Sheet Contents</h4>
 					<DataTableComponent
-						rows={filteredRows}
-						columns={columns}
-						revalidate={handleRevalidation}
+						rows={data}
+						tableRef={gridRef}
+						excludedFields={excludedFields}
+						onCellValueChanged={handleCellValueChange}
+						filterMode={filter}
 					/>
 					<div style={{ marginBottom: 12 }}>
-                        <button onClick={showAllRows} disabled={showFilter === null} style={{ marginRight: 8 }}>Show All</button>
-                        <button onClick={() => filterRows(true)} disabled={showFilter === true} style={{ marginRight: 8 }}>Show Valid</button>
-						<button onClick={() => filterRows(false)} disabled={showFilter === false} style={{ marginRight: 8 }}>Show Invalid</button>
+						<button
+							onClick={() => setFilter("all")}
+							disabled={filter === "all"}
+							style={{ marginRight: 8 }}
+						>
+							Show All
+						</button>
+						<button
+							onClick={() => setFilter("valid")}
+							disabled={filter === "valid"}
+							style={{ marginRight: 8 }}
+						>
+							Show Valid
+						</button>
+						<button
+							onClick={() => setFilter("invalid")}
+							disabled={filter === "invalid"}
+							style={{ marginRight: 8 }}
+						>
+							Show Invalid
+						</button>
 					</div>					
 				</div>
 			)}

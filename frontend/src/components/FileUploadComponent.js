@@ -24,7 +24,6 @@ function FileUploadComponent({targetServer, setUploading, setFileName, uploading
 
 			if (response.ok && responseData.fileName) {
 				setFileName(responseData.fileName);
-				//console.log(`File Name: ${responseData.fileName}`);
 			}
 		} catch (err) {
 	  		setResult("Upload failed: " + err);

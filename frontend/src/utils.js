@@ -14,33 +14,6 @@ export const retrieveData = async (filename, targetServer) => {
     }
 };
 
-export const processDataForFrappe = (data, hiddenColumns) => {
-    const columns = [
-        { name: "Customer Name", id: "Customer Name" },
-        { name: "Number", id: "Number" },
-        { name: "Email", id: "Email" },
-        { name: "Time", id: "Time" },
-    ]/* Object.keys(data[0] || {})
-        .filter(key => !hiddenColumns.includes(key))
-        .map((key) => ({
-            name: key,
-            id: key,
-        }));
-
-    const rows = data .map(row =>
-        columns.map(col =>
-            String(row[col.id] ?? "")
-        )
-    );
-    
-    console.log("Columns:", JSON.stringify(columns,null,2));
-    console.log("Rows:", JSON.stringify(rows,null,2));
-
-    setColumns(columns);
-    setFilteredRows(data) */
-    return { columns: columns, filteredRows: data };
-};
-
 /* const uploadToDB = async (uploadTarget, server, filename) => {
     const endpoint = uploadTarget === "postgres"
         ? `${server}/uploadpostgres`
@@ -70,7 +43,7 @@ export const processDataForFrappe = (data, hiddenColumns) => {
 } */
 
 export const revalidate = async (modRow, filename, targetServer) => {
-    console.log(`Filename: ${filename}`);
+    //console.log(`ModRow: ${modRow}`);
     try {
         const response = await fetch(`${targetServer}/update`, {
             method: "POST",
@@ -90,3 +63,25 @@ export const revalidate = async (modRow, filename, targetServer) => {
         return { success: true, message: `Error sending update: ${err}` };
     }
 };
+
+export const dataDiff = (oldData, newData) => {
+    const diff = []
+    for (let i = 0; i < oldData.length; i++) {
+        const oldRow = oldData[i];
+        const newRow = newData[i];
+        for (const key in newRow) {
+            if (Array.isArray(oldRow[key]) && Array.isArray(newRow[key])) {
+                if (JSON.stringify(oldRow[key]) !== JSON.stringify(newRow[key])) {
+                    //console.log(`Row ${i} key "${key}" changed (array):`, oldRow[key], '=>', newRow[key]);
+                    diff.push(newRow);
+                    break;
+                }
+            } else if (oldRow[key] !== newRow[key]) {
+                //console.log(`Row ${i} key "${key}" changed (array):`, oldRow[key], '=>', newRow[key]);
+                diff.push(newRow);
+                break;
+            } 
+        }
+    }
+    return diff;
+};  
