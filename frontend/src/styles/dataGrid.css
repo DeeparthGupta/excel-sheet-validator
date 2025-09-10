@@ -12,3 +12,8 @@
   max-height: 80vh;
   overflow: auto;
 }
+
+.ag-grid{
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

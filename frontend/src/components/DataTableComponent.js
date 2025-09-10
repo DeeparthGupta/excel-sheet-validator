@@ -28,7 +28,6 @@ function DataTableComponent({ rows, tableRef, excludedFields, onCellValueChanged
 			editable: false,
 			sortable: true,
 			filter: false,
-			maxWidth: 120,
 		},
 
 		{	
@@ -39,17 +38,17 @@ function DataTableComponent({ rows, tableRef, excludedFields, onCellValueChanged
 		},
 
 		...displayColumns.map(column => ({
-				headerName: column,
-				field: column,
-				editable: true,
-				flex:1,
-				cellClass: params =>
-					params.data._valid === false
-					&& params.data._errors.length > 0
-					&& params.data._errors.includes(params.colDef.field)
-						? "cell-error"
-						: undefined,
-
+			headerName: column,
+			field: column,
+			editable: true,
+			flex:1,
+			filter: true,
+			cellClass: params =>
+				params.data._valid === false
+				&& params.data._errors.length > 0
+				&& params.data._errors.includes(params.colDef.field)
+					? "cell-error"
+					: undefined,
 			})),
 
 	];
