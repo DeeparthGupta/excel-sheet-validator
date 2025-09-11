@@ -26,7 +26,7 @@ function DataTableComponent({ rows, tableRef, excludedFields, onCellValueChanged
 			field: "id",
 			valueGetter: params => (params.data._index + 1),
 			editable: false,
-			sortable: true,
+			sortable: false,
 			filter: false,
 		},
 
