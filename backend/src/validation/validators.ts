@@ -3,10 +3,6 @@ import { rowvalidator, uniquenessValidator } from "./validationTests.js";
 import fs from "fs/promises";
 
 function objectMerge(object1, object2) {
-    /* fs.writeFile(path.join("uploads","object1.json"), JSON.stringify(object1, null, 2), "utf-8")
-      .catch(console.error);
-    fs.writeFile(path.join("uploads","object2.json"), JSON.stringify(object2, null, 2), "utf-8")
-      .catch(console.error); */
 
     const object1Keys = Object.keys(object1);
     const object2Keys = Object.keys(object2);
@@ -53,7 +49,7 @@ export function validateFileData(fileData: Record<string,any>[]): Record<string,
         row._errors = errorKeys;
     });
 
-    fileDataCopy.forEach(record => {
+    fileDataCopy.forEach((record: { _index: string; _valid: boolean; _errors: string[]; }) => {
         if (!(record._index in allViolations)) {
             record._valid = true;
             record._errors = [];

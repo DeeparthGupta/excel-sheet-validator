@@ -1,5 +1,10 @@
 import { parse, isValid } from "date-fns";
 
+export type UniquenessViolation = {
+    field: string;
+    value: any;
+    indices: number[];
+};
 
 export function rowvalidator(
     row: Record<string, any>,
@@ -84,4 +89,52 @@ export function uniquenessValidator(
         });
     });
     return result;
+}
+
+export function rowUniquenessTest(
+    uniquenessMap: Map<string, Map<any, Set<number>>>,
+    uniqueFields: string[] = ["Email", "Number"],
+    checkrow: Record<string, any>,
+): UniquenessViolation[]{
+    if (uniqueFields.length === 0) return [];
+
+    const uniquenessViolations: UniquenessViolation[] = [];
+    uniqueFields.forEach(fieldName => {
+        const regularizedFieldName: string = fieldName.toLowerCase();
+        let fieldMap = uniquenessMap.get(regularizedFieldName);
+        if (!fieldMap) {
+            fieldMap = new Map<any, Set<number>>();
+            uniquenessMap.set(regularizedFieldName, fieldMap);
+        }
+        const value = checkrow[fieldName];
+        if (![null, undefined].includes(value)) {
+            if (!fieldMap.has(value)) {
+                fieldMap.set(value, new Set<number>());
+            }
+            removeIndexFromFieldMap(fieldMap, checkrow._index, value);
+            const indices = fieldMap.get(value)!;
+            indices.add(checkrow._index);
+            if (indices.size > 1) {
+                uniquenessViolations.push({
+                    field: fieldName,
+                    value: value,
+                    indices: Array.from(indices)
+                });
+            }
+        }
+    });
+    return uniquenessViolations
+}
+
+function removeIndexFromFieldMap(
+    fieldMap: Map<any, Set<number>>,
+    index: number,
+    excludeValue: any
+): void{
+    fieldMap.forEach((indexSet, value) => {
+        if (value === excludeValue) return;
+        indexSet.delete(index)
+        // Prune key if set is empty
+        if (indexSet.size === 0) fieldMap.delete(value);
+    });
 }
