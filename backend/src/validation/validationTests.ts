@@ -111,7 +111,7 @@ export function rowUniquenessTest(
             if (!fieldMap.has(value)) {
                 fieldMap.set(value, new Set<number>());
             }
-            removeIndexFromFieldMap(fieldMap, checkrow._index);
+            removeIndexFromFieldMap(fieldMap, checkrow._index, value);
             const indices = fieldMap.get(value)!;
             indices.add(checkrow._index);
             if (indices.size > 1) {
@@ -128,11 +128,13 @@ export function rowUniquenessTest(
 
 function removeIndexFromFieldMap(
     fieldMap: Map<any, Set<number>>,
-    index: number
+    index: number,
+    excludeValue: any
 ): void{
     fieldMap.forEach((indexSet, value) => {
+        if (value === excludeValue) return;
         indexSet.delete(index)
-        // Prune the key if the set is empty
+        // Prune key if set is empty
         if (indexSet.size === 0) fieldMap.delete(value);
     });
 }

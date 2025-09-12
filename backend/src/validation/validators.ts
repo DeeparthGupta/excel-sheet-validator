@@ -49,7 +49,7 @@ export function validateFileData(fileData: Record<string,any>[]): Record<string,
         row._errors = errorKeys;
     });
 
-    fileDataCopy.forEach(record => {
+    fileDataCopy.forEach((record: { _index: string; _valid: boolean; _errors: string[]; }) => {
         if (!(record._index in allViolations)) {
             record._valid = true;
             record._errors = [];
