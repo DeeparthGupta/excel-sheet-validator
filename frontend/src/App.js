@@ -8,14 +8,14 @@ import { revalidate, retrieveData, dataDiff } from "./utils";
 function App() {
 	const [result, setResult] = useState("");
 	const [uploading, setUploading] = useState(false);
-	const [data, setData] = useState([]);
+	const [data, setData] = useState({});
 	const [filename, setFileName] = useState("");
 	const [filter, setFilter] = useState("all");
 	const gridRef = useRef();
 	
 	const targetServer = process.env.REACT_APP_TARGET_SERVER || "http://localhost:3001";
 
-	const excludedFields = ["_valid", "_index", "_errors"];
+	const excludedFields = ["_valid", "_index", "_errors", "_sheetName"];
 
 	/* const allModel = null;
 	const validModel = { _valid: { filterType: "set", values: [true] } };

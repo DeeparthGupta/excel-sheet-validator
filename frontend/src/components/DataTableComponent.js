@@ -1,20 +1,20 @@
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
 import { AgGridReact } from "ag-grid-react";
-import { useEffect } from 'react';
+//import { useEffect } from 'react';
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import "../styles/dataGrid.css"
 
 ModuleRegistry.registerModules([ AllCommunityModule ]);
 
-function DataTableComponent({ rows, tableRef, excludedFields, onCellValueChanged, filterMode }) {
+function DataTableComponent({ rows, tableRef, excludedFields, onCellValueChanged, /* filterMode */ }) {
 
-	const isExternalFilterPresent = () => filterMode !== "all";
+	/* const isExternalFilterPresent = () => filterMode !== "all";
 	const doesExternalFilterPass = (node) => {
 		if (filterMode === "valid") return node.data._valid === true;
     	if (filterMode === "invalid") return node.data._valid === false;
     	return true;
 	}
-
+ */
 	const displayColumns = rows.length > 0
 		? Object.keys(rows[0]).filter(key => !excludedFields.includes(key))
 		: [];
@@ -61,11 +61,11 @@ function DataTableComponent({ rows, tableRef, excludedFields, onCellValueChanged
 		return "";
 	}
 
-	useEffect(() => {
+	/* useEffect(() => {
 		if (tableRef.current && tableRef.current.api) {
 			tableRef.current.api.onFilterChanged();
 		}
-	}, [filterMode, tableRef]);
+	}, [filterMode, tableRef]); */
 
 	return (
 		<div className="ag-theme-alpine data-grid-base">
@@ -76,8 +76,8 @@ function DataTableComponent({ rows, tableRef, excludedFields, onCellValueChanged
 				getRowStyle={setRowStyle}
 				onCellValueChanged={onCellValueChanged}
 				getRowId={params => String(params.data._index)}
-				isExternalFilterPresent={isExternalFilterPresent}
-				doesExternalFilterPass={doesExternalFilterPass}
+				//isExternalFilterPresent={isExternalFilterPresent}
+				//doesExternalFilterPass={doesExternalFilterPass}
 				domLayout={useAutoHeight ? 'autoHeight' : undefined}
 			/>			
 		</div>
