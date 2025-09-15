@@ -18,8 +18,13 @@ export interface JSONWorkBook {
 }
 
 export interface RelationConfig {
-    mainSheet: string,
-    oneToOne ?: string,
-    oneToMany ?: string,
-    zeroToMany ?: string
+    mainSheet: SheetRelation,
+    oneToOne ?: SheetRelation,
+    oneToMany ?: SheetRelation,
+    zeroToMany ?: SheetRelation
 };
+
+export interface SheetRelation {
+    name: string,
+    rowID: string
+}

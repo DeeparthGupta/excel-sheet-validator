@@ -9,6 +9,7 @@ import { NoSQLDataSource, RDBMSDataSource } from "./db/data-sources.js";
 import { CustomerPost } from "./db/CustomerPost.js";
 import { CustomerMongo } from "./db/CustomerMongo.js";
 import validateInterSheetRelations from "./validation/relationValidation.js";
+import { ExcelRow } from "./types/types.js";
 
 /* export interface FileRequest extends Request {
   file: Express.Multer.File;
@@ -55,9 +56,12 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
             // Write file to storage
             //await fs.writeFile(validatedFilePath, JSON.stringify(validatedData, null, 2), "utf-8");
 
+            const sheetNames = Array.from(validatedSheets.keys());
+
             res.status(200).json({
                 message: "File Injested and validated",
                 fileName: workBookName,
+                sheets: sheetNames
             });
         } catch (e) {
             res.status(500).json({
@@ -71,6 +75,7 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
 
 export async function retrieveFileData(req: Request, res: Response) {
     const fileName = req.query.filename as string;
+    const sheets = req.query.sheets as string[] | undefined | null;
 
     if (!fileName) {
         res.status(400).json({ error: "Invalid or missing file name" });
@@ -84,10 +89,21 @@ export async function retrieveFileData(req: Request, res: Response) {
         return;
     }
 
+    let result: Map<string, ExcelRow[]>;
+
+    if (!sheets || Array.isArray(sheets) && sheets.length === 0) {
+        result = data
+    } else {
+        result = new Map<string, ExcelRow[]>();
+        for (const sheetName of sheets) {
+            if (data.has(sheetName)) result.set(sheetName, data.get(sheetName));
+        }
+    }
+
     res.status(200).json({
         message: "File data retrieved successfully.",
         filename: fileName,
-        data: data
+        data: Object.fromEntries(result)
     });
 }
 
