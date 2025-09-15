@@ -21,22 +21,12 @@ function DataTableComponent({ rows, tableRef, excludedFields, onCellValueChanged
 	
 
 	const agColumns = [
-		{
-			headerName: "ID",
-			field: "id",
-			valueGetter: params => (params.data._index + 1),
-			editable: false,
-			sortable: false,
-			filter: false,
-		},
-
 		{	
 			headerName: "_valid",
 			field: "_valid",
 			hide: true,
 			filter: "agSetColumnFilter",
 		},
-
 		...displayColumns.map(column => ({
 			headerName: column,
 			field: column,

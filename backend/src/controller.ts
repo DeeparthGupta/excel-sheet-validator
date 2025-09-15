@@ -10,6 +10,8 @@ import { CustomerPost } from "./db/CustomerPost.js";
 import { CustomerMongo } from "./db/CustomerMongo.js";
 import validateInterSheetRelations from "./validation/relationValidation.js";
 import { ExcelRow } from "./types/types.js";
+import fs from "fs";
+import { promisify } from "util";
 
 /* export interface FileRequest extends Request {
   file: Express.Multer.File;
@@ -52,6 +54,10 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
             }
 
             saveObjectToMemory(workBookName, validatedSheets);
+            //console.log(`Saved sheets:`, Array.from(validatedSheets.keys()))
+
+            const data = retrieveObjectFromMemory(workBookName)
+            //console.log(`Retrieved Keys: ${data ? Array.from(validatedSheets.keys()) : "No sheets seem to be saved"}`);
 
             // Write file to storage
             //await fs.writeFile(validatedFilePath, JSON.stringify(validatedData, null, 2), "utf-8");
@@ -96,14 +102,26 @@ export async function retrieveFileData(req: Request, res: Response) {
     } else {
         result = new Map<string, ExcelRow[]>();
         for (const sheetName of sheets) {
-            if (data.has(sheetName)) result.set(sheetName, data.get(sheetName));
+            const sheetData = data.get(sheetName);
+            if (sheetData !== undefined) {
+                result.set(sheetName, sheetData);
+            }
         }
     }
 
+    const dataObject = Object.fromEntries(result);
+    //console.log(`Filename: ${fileName} \n dataObject: ${JSON.stringify(dataObject, null, 2)}`)
+    const testArtifactsDir = path.join(currentDir, "..", "testArtifacts");
+    if (!fs.existsSync(testArtifactsDir)) {
+        fs.mkdirSync(testArtifactsDir, { recursive: true });
+    }
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const outFile = path.join(testArtifactsDir, `${fileName}_${timestamp}.json`);
+    fs.writeFileSync(outFile, JSON.stringify(dataObject, null, 2), "utf-8");
     res.status(200).json({
         message: "File data retrieved successfully.",
         filename: fileName,
-        data: Object.fromEntries(result)
+        data: dataObject
     });
 }
 
@@ -116,7 +134,7 @@ const rowToEntity = (row: any) => ({
 });
 
 export async function uploadToDatabase(req: Request, res: Response) {
-    const fileName = req.query.filename as string;
+    /* const fileName = req.query.filename as string;
     const db = req.path.includes("postgres") ? "postgres" : "mongodb";
 
     if (!fileName) {
@@ -160,7 +178,7 @@ export async function uploadToDatabase(req: Request, res: Response) {
             error: "DB upload failed",
             details: (err as Error).message
         });
-    }
+    } */
 }
 
 export async function revalidate(req: Request, res: Response) {
@@ -179,10 +197,14 @@ export async function revalidate(req: Request, res: Response) {
 
     if (data && data !== undefined && row !== -1) {
         const sheetData = data.get(sheetName);
+        if (!sheetData) {
+            res.status(400).json({ error: "Sheet not found in file data" });
+            return;
+        }
         const index = sheetData.findIndex(record => row._index === record._index);
         sheetData[index] = row;
-        const validatedSheetData = validateSheetData(sheetData);
-        data.set(sheetName, validateSheetData);
+        const validatedSheetData = validateSheetData(sheetData as ExcelRow[]);
+        data.set(sheetName, validatedSheetData);
         validateInterSheetRelations(data, relationConfig);
 
         saveObjectToMemory(filename, data);

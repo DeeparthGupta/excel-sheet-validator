@@ -64,5 +64,6 @@ export function validateAllSheets(sheets: Map<string, ExcelRow[]>): Map<string, 
     for (const [sheetName, sheetRows] of sheets.entries()) {
         validatedSheets.set(sheetName, validateSheetData(sheetRows));
     }
+    //console.log("validateAllSheets output keys:", Array.from(validatedSheets.keys()));
     return validatedSheets;
 }

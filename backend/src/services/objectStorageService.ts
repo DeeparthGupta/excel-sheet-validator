@@ -1,12 +1,12 @@
-const objectStore = new Map<string, Record<string, any>[]>();
+const objectStore = new Map<string, Map<string, any[]>>();
 
-export function saveObjectToMemory(key: string, data: any) {
+export function saveObjectToMemory(key: string, data: Map<string,any[]>) {
     //console.log(`Saving to memory at key: ${key}, Data Length = ${data.length}`);
     objectStore.set(key, data)
     //console.log(`Saved to memory at key: ${key} \n Now has ${objectStore.get(key)?.length || 0} records`);
 }
 
-export function retrieveObjectFromMemory(key: string): any {
+export function retrieveObjectFromMemory(key: string): Map<string, any[]> | undefined{
     //console.log(`Retrieving from memory key: ${key}`)
     const data = objectStore.get(key);
     //console.log(`Retrieved. Object is of size ${data?.length || 0}`)

@@ -15,11 +15,12 @@ export async function workbookToJson(
     
     for (const sheetObject of sheetsToSteam) {
         const sheetName: string = sheetObject.name;
-        result[sheetName] = [];
+        result.set(sheetName, []);
 
         const stream = await getXlsxStream({
             filePath: inputPath,
             sheet: sheetName,
+            ignoreEmpty:true,
             withHeader: true
         })
 
@@ -44,7 +45,7 @@ export async function workbookToJson(
 
             // Build row Object
             const rowObj: ExcelRow = headers.reduce((acc, key, colIndex) => {
-                acc[key] = formatted.obj.key ?? formatted[colIndex] ?? null;
+                acc[key] = formatted.obj?.[key] ?? formatted[colIndex] ?? null;
                 return acc;
             }, {} as ExcelRow);
 
@@ -53,8 +54,9 @@ export async function workbookToJson(
             rowObj._valid = null;
             rowObj._errors = [];
 
-            result[sheetName].push(rowObj);
+            result.get(sheetName)!.push(rowObj);
         }
     }
+    //console.log(`Sheets: ${result}`);
     return { workBookName, sheets:result };
 }
