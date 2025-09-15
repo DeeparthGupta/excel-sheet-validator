@@ -1,6 +1,7 @@
 import path from "path";
 import { rowvalidator, uniquenessValidator } from "./validationTests.js";
 import fs from "fs/promises";
+import { ExcelRow } from "../services/fileIngestorService.js";
 
 function objectMerge(object1, object2) {
 
@@ -25,7 +26,7 @@ function objectMerge(object1, object2) {
     return mergedObject;
 }
 
-export function validateFileData(fileData: Record<string,any>[]): Record<string,any>[] {
+export function validateSheetData(fileData: ExcelRow[]): ExcelRow[] {
     let uniquenessViolations: Record<string, string[]> = uniquenessValidator(["Number", "Email"], fileData);
     let rowViolations = fileData.reduce((accumulator, record) => {
         const errors = rowvalidator(record);
@@ -58,4 +59,12 @@ export function validateFileData(fileData: Record<string,any>[]): Record<string,
 
     return fileDataCopy;
 
+}
+
+export function validateAllSheets(sheets: Map<string, ExcelRow[]>): Map<string, ExcelRow[]>{
+    const validatedSheets = new Map<string, ExcelRow[]>();
+    for (const [sheetName, sheetRows] of sheets.entries()) {
+        validatedSheets.set(sheetName, validateSheetData(sheetRows));
+    }
+    return validatedSheets;
 }

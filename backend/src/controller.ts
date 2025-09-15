@@ -1,9 +1,9 @@
 import type { Request, Response } from "express";
 import path from "path";
-import { convertExcelToJson } from "./services/fileInjestorService.js";
+import { workbookToJson } from "./services/fileIngestorService.js";
 import multer from "multer";
 import { retrieveObjectFromMemory, saveObjectToMemory } from "./services/objectStorageService.js";
-import { validateFileData } from "./validation/validators.js";
+import { validateAllSheets, validateSheetData } from "./validation/validators.js";
 import fs from "fs/promises";
 import { fileURLToPath } from "url";
 import { NoSQLDataSource, RDBMSDataSource } from "./db/data-sources.js";
@@ -42,21 +42,17 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
         }
 
         try {
-            const { outputPath, data } = await convertExcelToJson(file.path, uploadsDir);
+            const { workBookName, sheets } = await workbookToJson(file.path, []);
+            const validatedSheets = validateAllSheets(sheets);
 
-            // Data validation
-            const validatedData = validateFileData(data);
-            const validatedFileName = path.basename(outputPath, ".json") + "-validated.json";
-            const validatedFilePath = path.join(uploadsDir, validatedFileName);
-
-            saveObjectToMemory(file.originalname, validatedData);
+            saveObjectToMemory(workBookName, validatedSheets);
 
             // Write file to storage
-            await fs.writeFile(validatedFilePath, JSON.stringify(validatedData, null, 2), "utf-8");
+            //await fs.writeFile(validatedFilePath, JSON.stringify(validatedData, null, 2), "utf-8");
 
             res.status(200).json({
                 message: "File Injested and validated",
-                fileName: file.originalname,
+                fileName: workBookName,
             });
         } catch (e) {
             res.status(500).json({
@@ -161,16 +157,9 @@ export async function revalidate(req: Request, res: Response) {
     if (data && data !== undefined && row !== -1) {
         const index = data.findIndex(record => row._index === record._index);
         data[index] = row;
-        const validatedData = validateFileData(data);
+        const validatedData = validateAllSheets(data);
 
-        //console.log(`Validated BEFORE store ${JSON.stringify(validatedData, null, 2)}`);
         saveObjectToMemory(filename, validatedData);
-
-        //const retrievedData = retrieveObjectFromMemory(filename)
-        //console.log(`Retrieved AFTER store: ${JSON.stringify(retrievedData, null, 2)}`);
-
-        /* const equality = isEqual(validatedData, retrievedData);
-        console.log(`Comparison: Objects are ${equality ? "EQUAL" : "DIFFERENT"}`); */
 
         res.status(200).json({ message: "File changes saved" });
     } else {
