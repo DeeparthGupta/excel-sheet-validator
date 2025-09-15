@@ -1,16 +1,17 @@
-const objectStore = new Map<string, Record<string, any>[]>();
+type Workbook = {
+    sheets: Map<string, Record<string, any>[]>;
+    metadata?: Record<string, any>;
+}
+
+const objectStore = new Map<string, any>();
+const workBookStore = new Map<string, Workbook>();
 
 export function saveObjectToMemory(key: string, data: Record<string, any>[]) {
-    //console.log(`Saving to memory at key: ${key}, Data Length = ${data.length}`);
     objectStore.set(key, data)
-    //console.log(`Saved to memory at key: ${key} \n Now has ${objectStore.get(key)?.length || 0} records`);
 }
 
 export function retrieveObjectFromMemory(key: string): Record<string, any>[] | undefined {
-    //console.log(`Retrieving from memory key: ${key}`)
-    const data = objectStore.get(key);
-    //console.log(`Retrieved. Object is of size ${data?.length || 0}`)
-    return data
+    return objectStore.get(key);
 }
 
 export function deleteObjectInMemory(key: string) {
