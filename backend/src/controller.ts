@@ -4,11 +4,11 @@ import { workbookToJson } from "./services/fileIngestorService.js";
 import multer from "multer";
 import { retrieveObjectFromMemory, saveObjectToMemory } from "./services/objectStorageService.js";
 import { validateAllSheets, validateSheetData } from "./validation/validators.js";
-import fs from "fs/promises";
 import { fileURLToPath } from "url";
 import { NoSQLDataSource, RDBMSDataSource } from "./db/data-sources.js";
 import { CustomerPost } from "./db/CustomerPost.js";
 import { CustomerMongo } from "./db/CustomerMongo.js";
+import validateInterSheetRelations from "./validation/relationValidation.js";
 
 /* export interface FileRequest extends Request {
   file: Express.Multer.File;
@@ -44,6 +44,11 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
         try {
             const { workBookName, sheets } = await workbookToJson(file.path, []);
             const validatedSheets = validateAllSheets(sheets);
+
+            const relationConfig = req.body.relationConfig;
+            if (relationConfig) {
+                validateInterSheetRelations(validatedSheets, relationConfig);
+            }
 
             saveObjectToMemory(workBookName, validatedSheets);
 
@@ -145,21 +150,26 @@ export async function uploadToDatabase(req: Request, res: Response) {
 export async function revalidate(req: Request, res: Response) {
     //console.log("req.body:", req.body);
     const filename = req.body.filename;
+    const sheetName = req.body.sheetName;
+    const relationConfig = req.body.relationConfig;
     const row = req.body.row;
 
-    if (!filename || !row) {
-        res.status(400).json({ error: "Missing data or filename" })
+    if (!filename || !row || !sheetName) {
+        res.status(400).json({ error: "Missing data or location" })
         return;
     }
 
     const data = retrieveObjectFromMemory(filename);
 
     if (data && data !== undefined && row !== -1) {
-        const index = data.findIndex(record => row._index === record._index);
-        data[index] = row;
-        const validatedData = validateAllSheets(data);
+        const sheetData = data.get(sheetName);
+        const index = sheetData.findIndex(record => row._index === record._index);
+        sheetData[index] = row;
+        const validatedSheetData = validateSheetData(sheetData);
+        data.set(sheetName, validateSheetData);
+        validateInterSheetRelations(data, relationConfig);
 
-        saveObjectToMemory(filename, validatedData);
+        saveObjectToMemory(filename, data);
 
         res.status(200).json({ message: "File changes saved" });
     } else {

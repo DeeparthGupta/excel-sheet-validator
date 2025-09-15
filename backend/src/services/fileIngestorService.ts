@@ -1,22 +1,12 @@
 import { getWorksheets, getXlsxStream, } from "xlstream";
 import path, { extname } from 'path';
+import { ExcelRow, JSONWorkBook } from "../types/types.js";
 
-export type ExcelRow = Record<string, any> & {
-  _index: number;
-  _sheetName: string;
-  _valid: boolean | null;
-  _errors: string[];
-};
-
-export type jsonWorkbook = {
-    workBookName: string;
-    sheets: Map<string, ExcelRow[]>
-}
 
 export async function workbookToJson(
     inputPath: string,
     sheetNames: string[] = [] // Process specific sheets else process all
-): Promise<jsonWorkbook> {
+): Promise<JSONWorkBook> {
     const workBookName = path.basename(inputPath, extname(inputPath));
     const result: Map<string, ExcelRow[]> = new Map();
 

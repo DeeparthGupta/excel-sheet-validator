@@ -1,7 +1,5 @@
-import path from "path";
 import { rowvalidator, uniquenessValidator } from "./validationTests.js";
-import fs from "fs/promises";
-import { ExcelRow } from "../services/fileIngestorService.js";
+import { ExcelRow } from "../types/types.js";
 
 function objectMerge(object1, object2) {
 

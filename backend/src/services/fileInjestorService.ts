@@ -5,8 +5,8 @@ import { getXlsxStream } from "xlstream";
 
 export async function convertExcelToJson(
     inputPath: string,
-    outputDir: string,
-    deleteSource: boolean = false
+    deleteSource: boolean = false,
+    outputDir?: string
 ): Promise<{ outputPath: string, data: Record<string, any>[] }> {
     //const fileName = path.basename(inputPath, path.extname(inputPath)) + "-injested" + `-${Date.now()}` +".json";
     //const outputPath = path.join(outputDir, fileName);
