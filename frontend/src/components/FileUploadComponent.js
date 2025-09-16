@@ -10,6 +10,13 @@ function FileUploadComponent({targetServer, setUploading, setFileName, uploading
 		"BankAccounts (oneToMany)":["Bank Account IFSC","Account Number","IBAN"]
 	}
 
+	const tempRelationConfig = {
+		mainSheet: { name: "Main Table", rowID: "RowNumber" },
+		oneToOne: { name: "contactPerson (oneToOne)", rowID: "MaintableRowNumber" },
+		oneToMany: { name: "BankAccounts (oneToMany)", rowID: "MaintableRowNumber" },
+		zeroToMany: {name: "Addresses (ZeroToMany)", rowID:"MaintableRowNumber"}
+	}
+
     const fileUpload = async () => {
 		const file = fileInputRef.current.files[0];
 		if (!file) {
@@ -18,7 +25,8 @@ function FileUploadComponent({targetServer, setUploading, setFileName, uploading
 		}
 		const formData = new FormData();
 		formData.append("file", file);
-		formData.append("uniqueColumns", uniqueColumns);
+		formData.append("uniqueColumns", JSON.stringify(uniqueColumns));// Form data only sends strings.
+		formData.append("relationConfig", JSON.stringify(tempRelationConfig));
 
 		setUploading(true);
 		setResult("Uploading...");
@@ -30,7 +38,7 @@ function FileUploadComponent({targetServer, setUploading, setFileName, uploading
 	  		});
 			const responseData = await response.json();
 
-			if (response.ok && responseData.fileName) {
+			if (response.status === 200 && responseData.fileName) {
 				setFileName(responseData.fileName);
 			}
 		} catch (err) {

@@ -23,11 +23,26 @@ export default function validateInterSheetRelations(
     const oneToManyMap = config.oneToMany ? indexByRowID(oneToManyRows, config.oneToMany.rowID): new Map();
     const zeroToManyMap = config.zeroToMany ? indexByRowID(zeroToManyRows, config.zeroToMany.rowID) : new Map();
 
+    //debug
+    /* console.log("Main row IDs:", mainRows.map(r => r[config.mainSheet.rowID]));
+    if (config.oneToMany) {
+        console.log("OneToMany map keys:", Array.from(oneToManyMap.keys()));
+    }
+    if (config.zeroToMany) {
+        console.log("ZeroToMany map keys:", Array.from(zeroToManyMap.keys()));
+    }
+    if (config.oneToOne) {
+        console.log("OneToOne map keys:", Array.from(oneToOneMap.keys()));
+    } */
+
     // Validate One to one relationship
     if (config.oneToOne) {
         for (const mainRow of mainRows) {
             const mainKey = mainRow[config.mainSheet.rowID];
+            //console.log(`Looking up child rows for mainKey:`, mainKey);
             const childRows = oneToOneMap.get(mainKey) ?? [];
+            const childCount = childRows.length
+            mainRow[config.oneToOne.name] = childCount;// Get number of child rows in the corresponding sheet with the name rowID
             if (childRows.length !== 1) {
                 mainRow._valid = false;
                 childRows.forEach(row => {
@@ -43,8 +58,11 @@ export default function validateInterSheetRelations(
     // Validate One to Many relationship
     if (config.oneToMany) {
         for (const mainRow of mainRows) {
-            const mainKey = oneToManyRows[config.mainSheet.rowID];
+            const mainKey = mainRow[config.mainSheet.rowID];
+            //console.log(`Looking up child rows for mainKey:`, mainKey);
             const childRows = oneToManyMap.get(mainKey) ?? [];
+            const childCount = childRows.length;
+            mainRow[config.oneToMany.name] = childCount;
             if (childRows.length < 1) {
                 mainRow._valid = false;
                 childRows.forEach(row => {
@@ -59,15 +77,20 @@ export default function validateInterSheetRelations(
 
     // Propagate errors from Zero to many sheet
     if (config.zeroToMany) {
-        const mainKey = oneToManyRows[config.mainSheet.rowID];
         for (const mainRow of mainRows) {
+            const mainKey = mainRow[config.mainSheet.rowID];
+            //console.log(`Looking up child rows for mainKey:`, mainKey);
             const childRows = zeroToManyMap.get(mainKey) ?? [];
+            const childCount = childRows.length;
+            mainRow[config.zeroToMany.name] = childCount;
             childRows.forEach(row => {
                 if (row._valid === false) mainRow._valid = false;
             });
         }
     }
-
+    
+    /* console.log(`\n Main Rows: ${JSON.stringify(mainRows,null,2)}`);
+    console.log(`\n Num of main rows: ${mainRows.length}`); */
     // Update sheets
     sheets.set(config.mainSheet.name, mainRows);
     if (config.oneToOne) sheets.set(config.oneToOne.name, oneToOneRows);

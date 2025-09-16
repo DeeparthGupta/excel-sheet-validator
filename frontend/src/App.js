@@ -15,7 +15,7 @@ function App() {
 	const targetServer = process.env.REACT_APP_TARGET_SERVER || "http://localhost:3001";
 	const excludedFields = ["_valid", "_index", "_errors", "_sheetName"];
 	const tempRelationConfig = {
-		mainSheet: { name: "Main Table", rowID: "Row Number" },
+		mainSheet: { name: "Main Table", rowID: "RowNumber" },
 		oneToOne: { name: "contactPerson (oneToOne)", rowID: "MaintableRowNumber" },
 		oneToMany: { name: "BankAccounts (oneToMany)", rowID: "MaintableRowNumber" },
 		zeroToMany: {name: "Addresses (ZeroToMany)", rowID:"MaintableRowNumber"}

@@ -11,7 +11,6 @@ import { CustomerMongo } from "./db/CustomerMongo.js";
 import validateInterSheetRelations from "./validation/relationValidation.js";
 import { ExcelRow } from "./types/types.js";
 import fs from "fs";
-import { promisify } from "util";
 
 /* export interface FileRequest extends Request {
   file: Express.Multer.File;
@@ -46,12 +45,33 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
 
         try {
             const { workBookName, sheets } = await workbookToJson(file.path, []);
-            const validatedSheets = validateAllSheets(sheets, req.body.uniqueColumns);
+            let uniqueColumns = req.body.uniqueColumns;
+            if (typeof uniqueColumns === "string") {
+                try {
+                    uniqueColumns = JSON.parse(uniqueColumns);
+                } catch (e) {
+                    console.log("Failed to parse unique columns");
+                    uniqueColumns = undefined;
+                } 
+            }
 
-            const relationConfig = req.body.relationConfig;
+            const validatedSheets = validateAllSheets(sheets, req.body.uniqueColumns);                    
+
+            let relationConfig = req.body.relationConfig;
+            if (typeof relationConfig === "string") {
+                try {
+                    //console.log(relationConfig);
+                    relationConfig = JSON.parse(relationConfig);
+                } catch (e) {
+                    console.error("Failed to parse relation config")
+                    relationConfig = undefined;
+                }
+            }
+
             if (relationConfig) {
                 validateInterSheetRelations(validatedSheets, relationConfig);
-            }
+            } else console.log("No relation config is empty.")
+            
 
             saveObjectToMemory(workBookName, validatedSheets);
             //console.log(`Saved sheets:`, Array.from(validatedSheets.keys()))
