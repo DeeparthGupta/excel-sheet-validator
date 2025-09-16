@@ -4,7 +4,7 @@ import { UniquenessViolation } from "../types/types.js";
 
 export function rowvalidator(
     row: Record<string, any>,
-    excludekeys: string[] = ["_index", "_valid", "_errors"],
+    excludekeys: string[] = ["_index", "_valid", "_errors", "_sheetName"],
     defaultVal: string = "17:00"
 ): string[] {
     const errorKeys: Set<string> = new Set();

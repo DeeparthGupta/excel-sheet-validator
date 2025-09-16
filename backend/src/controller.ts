@@ -46,7 +46,7 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
 
         try {
             const { workBookName, sheets } = await workbookToJson(file.path, []);
-            const validatedSheets = validateAllSheets(sheets);
+            const validatedSheets = validateAllSheets(sheets, req.body.uniqueColumns);
 
             const relationConfig = req.body.relationConfig;
             if (relationConfig) {
@@ -186,6 +186,7 @@ export async function revalidate(req: Request, res: Response) {
     const filename = req.body.filename;
     const sheetName = req.body.sheetName;
     const relationConfig = req.body.relationConfig;
+    const uniqueColumns = req.body.uniqueColumns;
     const row = req.body.row;
 
     if (!filename || !row || !sheetName) {
@@ -203,7 +204,7 @@ export async function revalidate(req: Request, res: Response) {
         }
         const index = sheetData.findIndex(record => row._index === record._index);
         sheetData[index] = row;
-        const validatedSheetData = validateSheetData(sheetData as ExcelRow[]);
+        const validatedSheetData = validateSheetData(sheetData as ExcelRow[], uniqueColumns[sheetName] ?? []);
         data.set(sheetName, validatedSheetData);
         validateInterSheetRelations(data, relationConfig);
 

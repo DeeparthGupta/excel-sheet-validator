@@ -1,7 +1,14 @@
 import { useRef } from "react";
 
 function FileUploadComponent({targetServer, setUploading, setFileName, uploading, setResult}) {
-    const fileInputRef = useRef();
+	const fileInputRef = useRef();
+	
+	const uniqueColumns = {
+		"Main Table": ["Number", "Email"],
+		"Addresses (ZeroToMany)": ["Street", "Street2", "City", "State", "Pincode", "Country"],
+		"contactPerson (oneToOne)": ["Contact Person Name", "Mobile Number", "Email Address"],
+		"BankAccounts (oneToMany)":["Bank Account IFSC","Account Number","IBAN"]
+	}
 
     const fileUpload = async () => {
 		const file = fileInputRef.current.files[0];
@@ -11,6 +18,7 @@ function FileUploadComponent({targetServer, setUploading, setFileName, uploading
 		}
 		const formData = new FormData();
 		formData.append("file", file);
+		formData.append("uniqueColumns", uniqueColumns);
 
 		setUploading(true);
 		setResult("Uploading...");

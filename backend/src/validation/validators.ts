@@ -24,8 +24,8 @@ function objectMerge(object1, object2) {
     return mergedObject;
 }
 
-export function validateSheetData(fileData: ExcelRow[]): ExcelRow[] {
-    let uniquenessViolations: Record<string, string[]> = uniquenessValidator(["Number", "Email"], fileData);
+export function validateSheetData(fileData: ExcelRow[], uniqueFields:string[]): ExcelRow[] {
+    let uniquenessViolations: Record<string, string[]> = uniquenessValidator(uniqueFields, fileData);
     let rowViolations = fileData.reduce((accumulator, record) => {
         const errors = rowvalidator(record);
         
@@ -59,10 +59,14 @@ export function validateSheetData(fileData: ExcelRow[]): ExcelRow[] {
 
 }
 
-export function validateAllSheets(sheets: Map<string, ExcelRow[]>): Map<string, ExcelRow[]>{
+export function validateAllSheets(
+    sheets: Map<string, ExcelRow[]>,
+    uniqueFields: { [key: string]: string[] }
+): Map<string, ExcelRow[]>{
+
     const validatedSheets = new Map<string, ExcelRow[]>();
     for (const [sheetName, sheetRows] of sheets.entries()) {
-        validatedSheets.set(sheetName, validateSheetData(sheetRows));
+        validatedSheets.set(sheetName, validateSheetData(sheetRows, uniqueFields[sheetName] ?? []));
     }
     //console.log("validateAllSheets output keys:", Array.from(validatedSheets.keys()));
     return validatedSheets;
