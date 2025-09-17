@@ -55,7 +55,14 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
                 } 
             }
 
-            const validatedSheets = validateAllSheets(sheets, req.body.uniqueColumns);                    
+            const validatedSheets = validateAllSheets(sheets, uniqueColumns);  
+            const testArtifactsDir = path.join(currentDir, "..", "testArtifacts");
+            if (!fs.existsSync(testArtifactsDir)) {
+                fs.mkdirSync(testArtifactsDir, { recursive: true });
+            }
+            const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+            const outFile = path.join(testArtifactsDir, `${workBookName}_${timestamp}-Intra.json`);
+            fs.writeFileSync(outFile, JSON.stringify(validatedSheets, null, 2), "utf-8");
 
             let relationConfig = req.body.relationConfig;
             if (typeof relationConfig === "string") {
@@ -136,7 +143,7 @@ export async function retrieveFileData(req: Request, res: Response) {
         fs.mkdirSync(testArtifactsDir, { recursive: true });
     }
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const outFile = path.join(testArtifactsDir, `${fileName}_${timestamp}.json`);
+    const outFile = path.join(testArtifactsDir, `${fileName}_${timestamp}-Inter.json`);
     fs.writeFileSync(outFile, JSON.stringify(dataObject, null, 2), "utf-8");
     res.status(200).json({
         message: "File data retrieved successfully.",

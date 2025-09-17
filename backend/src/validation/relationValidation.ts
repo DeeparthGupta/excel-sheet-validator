@@ -41,8 +41,9 @@ export default function validateInterSheetRelations(
             const mainKey = mainRow[config.mainSheet.rowID];
             //console.log(`Looking up child rows for mainKey:`, mainKey);
             const childRows = oneToOneMap.get(mainKey) ?? [];
-            const childCount = childRows.length
-            mainRow[config.oneToOne.name] = childCount;// Get number of child rows in the corresponding sheet with the name rowID
+            const childCount = childRows.length;
+            // Get number of child rows in the corresponding sheet with the name rowID
+            mainRow[config.oneToOne.name] = childCount;
             if (childRows.length !== 1) {
                 mainRow._valid = false;
                 childRows.forEach(row => {

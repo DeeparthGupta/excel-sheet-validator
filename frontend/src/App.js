@@ -28,10 +28,6 @@ function App() {
 		"BankAccounts (oneToMany)":["Bank Account IFSC","Account Number","IBAN"]
 	}
 
-	/* const allModel = null;
-	const validModel = { _valid: { filterType: "set", values: [true] } };
-	const invalidModel = { _valid: { filterType: "set", values: [false] } };
- */
 	const handleCellValueChange = async (params, sheetName) => {
 		const editedRow = params.data;
 		const { success, message } = await revalidate(editedRow, filename, targetServer, sheetName, tempRelationConfig, uniqueColumns);
