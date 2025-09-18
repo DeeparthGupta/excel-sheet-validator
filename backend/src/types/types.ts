@@ -18,13 +18,26 @@ export interface JSONWorkBook {
 }
 
 export interface RelationConfig {
-    mainSheet: SheetRelation,
-    oneToOne ?: SheetRelation,
-    oneToMany ?: SheetRelation,
-    zeroToMany ?: SheetRelation
+    mainSheet: TableKey,
+    oneToOne ?: TableRelation,
+    oneToMany ?: TableRelation,
+    zeroToMany ?: TableRelation
 };
 
-export interface SheetRelation {
+interface TableRelation{
+    mainTable: TableKey,
+    childTable: TableKey,
+    relationship: "oneToOne" | "oneToMany",
+    connectionMandatory: boolean
+}
+
+export interface TableKey {
     name: string,
-    rowID: string
+    keyColumn: string
+}
+
+export type Sheet = {
+    name: string;
+    keyColumn: string;
+    rows: ExcelRow[];
 }
