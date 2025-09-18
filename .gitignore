@@ -3,3 +3,4 @@
 **/dist/
 **/dist-tests/
 **/testArtifacts/
+.github/copilot-instructions.md

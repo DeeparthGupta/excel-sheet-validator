@@ -1,6 +1,6 @@
 import { Tabs, Tab, Box } from "@mui/material";
 import DataTableComponent from "./DataTableComponent";
-const { useState } = require("react");
+import { useState } from "react";
 
 function SheetTabs({data, gridRefs, excludedFields, onCellValueChanged}) {
     const sheetNames = Object.keys(data);
@@ -17,11 +17,13 @@ function SheetTabs({data, gridRefs, excludedFields, onCellValueChanged}) {
         setTabHasMatch(prev => ({ ...prev, [tabIndex]: hasMatch }));
     };
 
+    const normalizedQuery = (searchQuery || "").trim();
+
     return (
         <Box sx={{ width: "100%"}}>
             <input
                 type="text"
-                placeholder={`Search Table`}
+                placeholder={`Search All Tables`}
                 value={searchQuery}
                 onChange={text => setSearchQuery(text.target.value)}
                 style={{marginBottom: 8, width:"50%"}}
@@ -37,23 +39,19 @@ function SheetTabs({data, gridRefs, excludedFields, onCellValueChanged}) {
                     <Tab
                         key={name}
                         label={name}
-                        sx={{fontWeight: tabHasMatch[index] ? "bold" : ""}}
+                        sx={{fontWeight: normalizedQuery && tabHasMatch[index] ? "bold" : ""}}
                     />
                 ))}
             </Tabs>
             <Box sx={{ mt: 2 }}>
                 {sheetNames.map((name, idx) => (
-                    <Box
-                        key={name}
-                        hidden={idx !== activeTab}
-                        sx={{width:"100%"}}
-                    >
+                    <Box key={name} hidden={idx !== activeTab} sx={{width:"100%"}}>
                         <DataTableComponent
                             rows={data[name]}
-                            tableRef={table => { gridRefs.current[name] = table; }}
+                            tableRef={api => { gridRefs.current[name] = api; }}
                             excludedFields={ excludedFields }
-                            onCellValueChanged={ params => onCellValueChanged(params, name)}
-                            searchQuery={searchQuery}
+                            onCellValueChanged={ params => onCellValueChanged(params, name) }
+                            searchQuery={normalizedQuery !== "" ? normalizedQuery : undefined}
                             onHasMatch={hasMatch => handleHasMatch(idx, hasMatch)}
                         />
                     </Box>
