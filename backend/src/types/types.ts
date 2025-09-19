@@ -41,3 +41,8 @@ export type Sheet = {
     keyColumn: string;
     rows: ExcelRow[];
 }
+
+export type RelationSetting = {
+    min: number;
+    max: number
+}

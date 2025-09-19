@@ -1,15 +1,6 @@
-import { chdir } from "process";
-import { ExcelRow, Sheet, TableKey } from "../types/types.js";
+import { ExcelRow, RelationSetting, Sheet, TableKey } from "../types/types.js";
 import { RelationConfig } from "../types/types.js";
 
-function indexByRowID(rows: ExcelRow[], rowID:string): Map<string, ExcelRow[]> {
-    const map = new Map<string, ExcelRow[]>();
-    for (const row of rows) {
-        if (!map.has(row[rowID])) map.set(row[rowID], []);
-        map.get(row[rowID])!.push(row);
-    }
-    return map;
-};
 
 export default function validateInterSheetRelations(
     sheets: Map<string, ExcelRow[]>,
@@ -67,11 +58,11 @@ export default function validateInterSheetRelations(
             mainRow[config.oneToMany.childTable.keyColumn] = childCount;
             if (childRows.length < 1) {
                 mainRow._valid = false;
-                childRows.forEach(row => {
+                childRows.forEach((row: ExcelRow) => {
                     row._valid = false;
                 });
             }
-            childRows.forEach(row => {
+            childRows.forEach((row: ExcelRow) => {
                 if (row._valid === false) mainRow._valid = false;
             })
         }
@@ -105,40 +96,76 @@ export default function validateInterSheetRelations(
 function validateSheetRelation(
     mainSheet: Sheet,
     childSheet: Sheet,
-    relation: "oneToOne" | "oneToMany",
-    connection: boolean
-): void{
-    /* const mainKeys = pluckfromRows(mainSheet.rows, mainSheet.keyColumn);
-    const childKeys = pluckfromRows(childSheet.rows, childSheet.keyColumn); */
-    const mainIdRowMap = indexByRowID(mainSheet.rows, mainSheet.keyColumn);
-    const childIdRowMap = indexByRowID(childSheet.rows, childSheet.keyColumn);
+    relation: RelationSetting,
+): ExcelRow[]{
+    /* const childKeys = pluckfromRows(childSheet.rows, childSheet.keyColumn); 
+    const mainIdRowMap = indexByRowID(mainSheet.rows, mainSheet.keyColumn); */
+    const mainKeys = pluckfromRows(mainSheet.rows, mainSheet.keyColumn);
+    const childIdRowMap = indexByRowID(childSheet.rows, childSheet.keyColumn); 
+    
+    // Mark all the orphaned chidlren as invalid
+    const emptyMainRows: ExcelRow[] = []
+    const mainIDSet = new Set(mainKeys.map(String));
+    for (const [childKey, childRows] of childIdRowMap.entries()) {
+        if (!mainIDSet.has(childKey)) {
+            childRows.forEach(childRow => {
+                childRow._valid = false;
+                childRow._errors.push(childSheet.keyColumn);
+            });
 
-    if (connection) {
-        /* if (mainKeys.length < childKeys.length) {
-            const missingKeys = mainKeys.filter(e => !childKeys.includes(e));
-            missingKeys.forEach()
-        } */
-        
-        
-        
-        for (const row of mainSheet.rows) {
-            const mainKey = row[mainSheet.keyColumn];
-            const relatedChildRows = childIdRowMap.get(mainKey) ?? [];
-            const relatedChildRowCount = relatedChildRows.length;
-
-            if (relatedChildRowCount < 1) {
-                row._valid = false;
-            } 
-            else if (relation === "oneToOne" && relatedChildRowCount > 1) {
-                row._valid = false;
-                for (const child of relatedChildRows) {
-                    child._valid = false;
-                }
+            // Add empty rows corresponding to the orphaned children
+            const emptyMainRow: ExcelRow = {
+                [mainSheet.keyColumn]: childKey,
+                _index: mainSheet.rows.length,
+                _sheetName: mainSheet.name,
+                _valid: false,
+                _errors: [mainSheet.keyColumn]
             }
+            
+            // Add to the main rows at the end after processing.
+            emptyMainRows.push(emptyMainRow);
+            // Prevent duplicate empty rows if multiple children share the same orphan key
+            mainIDSet.add(childKey)
         }
     }
-    
+
+    for (const row of mainSheet.rows) {
+        const mainKey = row[mainSheet.keyColumn];
+        const relatedChildRows = childIdRowMap.get(mainKey) ?? [];
+        const relatedChildRowCount = relatedChildRows.length;
+
+        if (relatedChildRowCount < relation.min) {
+            row._valid = false;
+            // Set all the chidlren to invalid too?
+            /* if (relatedChildRowCount) {
+                relatedChildRows.forEach(childRow => childRow._valid = false);
+            } */
+            continue;
+        }
+
+        else if ((relation.max !== -1) && relatedChildRowCount > relation.max) {
+            row._valid = false;
+            // Set all the children to invalid too?
+            //relatedChildRows.forEach(childRow => childRow._valid = false);
+            continue;
+        }
+
+        else {
+            const errorCount = relatedChildRows.filter(childRow => childRow._valid === false).length;
+            if (errorCount > 0) row._valid = false;
+        }
+    }
+    return emptyMainRows;
 }
+
+function indexByRowID(rows: ExcelRow[], rowID:string): Map<string, ExcelRow[]> {
+    const map = new Map<string, ExcelRow[]>();
+    for (const row of rows) {
+        if (!map.has(row[rowID])) map.set(row[rowID], []);
+        map.get(row[rowID])!.push(row);
+    }
+    return map;
+};
 
 function pluckfromRows<K extends keyof ExcelRow>(
     rows: ExcelRow[],
