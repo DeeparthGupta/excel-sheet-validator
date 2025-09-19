@@ -18,28 +18,18 @@ export interface JSONWorkBook {
 }
 
 export interface RelationConfig {
-    mainSheet: TableKey,
-    oneToOne ?: TableRelation,
-    oneToMany ?: TableRelation,
-    zeroToMany ?: TableRelation
+    mainSheet: Sheet;
+    [key: string]: Sheet | ChildSheet;
 };
 
-interface TableRelation{
-    mainTable: TableKey,
-    childTable: TableKey,
-    relationship: "oneToOne" | "oneToMany",
-    connectionMandatory: boolean
-}
-
-export interface TableKey {
-    name: string,
-    keyColumn: string
-}
-
-export type Sheet = {
+export interface Sheet {
     name: string;
     keyColumn: string;
     rows: ExcelRow[];
+}
+
+export interface ChildSheet {
+    relationship: RelationSetting;
 }
 
 export type RelationSetting = {
