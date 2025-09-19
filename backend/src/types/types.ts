@@ -18,19 +18,16 @@ export interface JSONWorkBook {
 }
 
 export interface RelationConfig {
-    mainSheet: string;
-    relations: {
-        [sheetname: string]: RelationSetting;        
-    }
+    [sheetname: string]: RelationSetting;    
 };
+
+export type RelationSetting = {
+    min: number;
+    max: number
+}
 
 export interface Sheet {
     name: string;
     keyColumn: string;
     rows: ExcelRow[];
-}
-
-export type RelationSetting = {
-    min: number;
-    max: number
 }
