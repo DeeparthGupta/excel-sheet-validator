@@ -18,18 +18,16 @@ export interface JSONWorkBook {
 }
 
 export interface RelationConfig {
-    mainSheet: Sheet;
-    [key: string]: Sheet | ChildSheet;
+    mainSheet: string;
+    relations: {
+        [sheetname: string]: RelationSetting;        
+    }
 };
 
 export interface Sheet {
     name: string;
     keyColumn: string;
     rows: ExcelRow[];
-}
-
-export interface ChildSheet {
-    relationship: RelationSetting;
 }
 
 export type RelationSetting = {
