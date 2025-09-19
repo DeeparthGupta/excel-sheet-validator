@@ -23,7 +23,8 @@ export interface RelationConfig {
 
 export type RelationSetting = {
     min: number;
-    max: number
+    max: number;
+    keyColumn: string;
 }
 
 export interface Sheet {

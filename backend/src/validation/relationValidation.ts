@@ -14,7 +14,7 @@ export default function validateInterSheetRelations(
         if (sheet.name !== mainSheetName) {
             validateSheetRelation(mainSheet,
                 sheet,
-                config.sheetname ?? { min: 0, max: -1 },
+                config.sheetname!,
                 extraMainRows
             );
         } else continue;
