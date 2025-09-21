@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import FileUploadComponent from "./components/FileUploadComponent";
 import DBUploadComponent from "./components/DBUploadComponent";
 import { revalidate, retrieveData, dataDiff } from "./utils";
-import SheetTabs from "./components/SheetTabs";
+import SheetTabs from "./components/SheetTabsComponent";
 
 
 function App() {
