@@ -38,8 +38,8 @@ function DataTableComponent({ rows, tableRef, excludedFields, onCellValueChanged
 			filter: true,
 			cellClass: params =>
 				params.data._valid === false
-				&& params.data._errors.length > 0
-				&& params.data._errors.includes(params.colDef.field)
+				&& params.data._errorCols.length > 0
+				&& params.data._errorCols.includes(params.colDef.field)
 				? "cell-error"
 				: undefined,
 		})),
