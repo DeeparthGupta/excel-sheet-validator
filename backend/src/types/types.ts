@@ -9,7 +9,7 @@ export interface ExcelRow {
     _index: number;
     _sheetName: string;
     _valid: boolean | null;
-    _errors: string[];
+    _errorCols: string[];
 };
 
 export interface JSONWorkBook {

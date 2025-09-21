@@ -45,13 +45,13 @@ export function validateSheetData(fileData: ExcelRow[], uniqueFields:string[]): 
         const row = fileDataCopy.find(r => r._index === index); // Use index value from data
         
         row._valid = false;
-        row._errors = errorKeys;
+        row._errorCols = errorKeys;
     });
 
-    fileDataCopy.forEach((record: { _index: string; _valid: boolean; _errors: string[]; }) => {
+    fileDataCopy.forEach((record: { _index: string; _valid: boolean; _errorCols: string[]; }) => {
         if (!(record._index in allViolations)) {
             record._valid = true;
-            record._errors = [];
+            record._errorCols = [];
         }
     });
 

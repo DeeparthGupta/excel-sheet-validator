@@ -52,7 +52,7 @@ export async function workbookToJson(
             rowObj._index = rowIndex++;
             rowObj._sheetName = sheetName;
             rowObj._valid = null;
-            rowObj._errors = [];
+            rowObj._errorCols = [];
 
             result.get(sheetName)!.push(rowObj);
         }

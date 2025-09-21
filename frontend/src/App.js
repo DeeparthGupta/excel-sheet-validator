@@ -39,7 +39,7 @@ function App() {
 	}
 	
 	const targetServer = process.env.REACT_APP_TARGET_SERVER || "http://localhost:3001";
-	const excludedFields = ["_valid", "_index", "_errors", "_sheetName"];
+	const excludedFields = ["_valid", "_index", "_errorCols", "_sheetName"];
 
 
 	const handleCellValueChange = async (params, sheetName) => {

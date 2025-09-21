@@ -33,7 +33,7 @@ export default function validateInterSheetRelations(
                 _index: mainSheet.rows.length + extraMainRows.length,
                 _sheetName: mainSheet.name,
                 _valid: false,
-                _errors: [mainSheet.keyColumn]
+                _errorCols: [mainSheet.keyColumn]
             };
             extraMainRows.push(emptyMainRow)
         });
@@ -60,7 +60,7 @@ export function validateSheetRelation(
         if (!mainIDSet.has(childKeyNum)) {
             childRows.forEach(childRow => {
                 childRow._valid = false;
-                childRow._errors.push(childSheet.keyColumn);
+                childRow._errorCols.push(childSheet.keyColumn);
             });
             // Add orphaned row keys to the return
             orphanedKeys.add(childKeyNum);
