@@ -11,16 +11,20 @@ function App() {
 	const [data, setData] = useState({});
 	const [filename, setFileName] = useState("");
 	const gridRefs = useRef({});
-	
-	const targetServer = process.env.REACT_APP_TARGET_SERVER || "http://localhost:3001";
-	const excludedFields = ["_valid", "_index", "_errors", "_sheetName"];
-	const tempRelationConfig = {
-		mainSheet: { name: "Main Table", rowID: "RowNumber" },
-		oneToOne: { name: "contactPerson (oneToOne)", rowID: "MaintableRowNumber" },
-		oneToMany: { name: "BankAccounts (oneToMany)", rowID: "MaintableRowNumber" },
-		zeroToMany: {name: "Addresses (ZeroToMany)", rowID:"MaintableRowNumber"}
+
+	const keyColumnMapping = {
+		"Main Table": "RowNumber",
+		"contactPerson (oneToOne)": "MaintableRowNumber",
+		"BankAccounts (oneToMany)": "MaintableRowNumber",
+		"Addresses (ZeroToMany)": "MaintableRowNumber"
 	}
 
+	const relationPresets = {
+		oneToOne: { min: 1, max: 1 },
+		oneToMany: { min: 1, max: -1 },
+		zeroToMany: { min: 0, max: -1 },
+		zeroOrOne: { min: 0, max: 1 }
+	}
 	const uniqueColumns = {
 		"Main Table": ["Number", "Email"],
 		"Addresses (ZeroToMany)": ["Street", "Street2", "City", "State", "Pincode", "Country"],
@@ -28,9 +32,19 @@ function App() {
 		"BankAccounts (oneToMany)":["Bank Account IFSC","Account Number","IBAN"]
 	}
 
+	const tempRelationConfig = {
+		"Addresses (ZeroToMany)": relationPresets.oneToMany,
+		"contactPerson (oneToOne)": relationPresets.oneToOne,
+		"BankAccounts (oneToMany)": relationPresets.oneToMany
+	}
+	
+	const targetServer = process.env.REACT_APP_TARGET_SERVER || "http://localhost:3001";
+	const excludedFields = ["_valid", "_index", "_errors", "_sheetName"];
+
+
 	const handleCellValueChange = async (params, sheetName) => {
 		const editedRow = params.data;
-		const { success, message } = await revalidate(editedRow, filename, targetServer, sheetName, tempRelationConfig, uniqueColumns);
+		const { success, message } = await revalidate(editedRow, filename, targetServer, sheetName, tempRelationConfig);
 		setResult(message);
 		if (success) {
 			const { data: newData, message: retrievalMessage } = await retrieveData(filename, targetServer);
@@ -58,6 +72,12 @@ function App() {
 
 	const isSameModel = (model) => JSON.stringify(filter) === JSON.stringify(model); */
 
+	const relationConfigTranslation = Object.fromEntries(
+		Object.entries(tempRelationConfig).map(([sheet, preset]) => {
+			return [sheet, { ...preset }];
+		})	
+	);
+
 	// Get uploaded file data using the filename sent in response to upload
 	useEffect(() => {
 		if (filename) {
@@ -81,6 +101,9 @@ function App() {
 				setFileName={setFileName}
 				uploading={uploading}
 				setResult={setResult}
+				keyColumnMapping={keyColumnMapping}
+				uniqueColumns={uniqueColumns}
+				relations={relationConfigTranslation}
 			/>
 			<pre style={{ background: "#f4f4f4", padding: 16, marginTop: 24 }}>{result}</pre>
 			<DBUploadComponent

@@ -42,7 +42,7 @@ export const retrieveData = async (filename, targetServer) => {
     }
 } */
 
-export const revalidate = async (modRow, filename, targetServer, sheetName, relationConfig = null, uniqueColumns) => {
+export const revalidate = async (modRow, filename, targetServer, sheetName, relationConfig = null) => {
     //console.log(`ModRow: ${modRow}`);
     try {
         const response = await fetch(`${targetServer}/update`, {
@@ -53,7 +53,6 @@ export const revalidate = async (modRow, filename, targetServer, sheetName, rela
                 sheetName: sheetName,
                 row: modRow,
                 relationConfig: relationConfig,
-                uniqueColumns: uniqueColumns
             })
         });
         const result = await response.json();

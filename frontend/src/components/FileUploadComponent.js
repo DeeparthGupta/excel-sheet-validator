@@ -1,21 +1,7 @@
 import { useRef } from "react";
 
-function FileUploadComponent({targetServer, setUploading, setFileName, uploading, setResult}) {
+function FileUploadComponent({targetServer, setUploading, setFileName, uploading, setResult, keyColumnMapping, uniqueColumns, relations}) {
 	const fileInputRef = useRef();
-	
-	const uniqueColumns = {
-		"Main Table": ["Number", "Email"],
-		"Addresses (ZeroToMany)": ["Street", "Street2", "City", "State", "Pincode", "Country"],
-		"contactPerson (oneToOne)": ["Contact Person Name", "Mobile Number", "Email Address"],
-		"BankAccounts (oneToMany)":["Bank Account IFSC","Account Number","IBAN"]
-	}
-
-	const tempRelationConfig = {
-		mainSheet: { name: "Main Table", rowID: "RowNumber" },
-		oneToOne: { name: "contactPerson (oneToOne)", rowID: "MaintableRowNumber" },
-		oneToMany: { name: "BankAccounts (oneToMany)", rowID: "MaintableRowNumber" },
-		zeroToMany: {name: "Addresses (ZeroToMany)", rowID:"MaintableRowNumber"}
-	}
 
     const fileUpload = async () => {
 		const file = fileInputRef.current.files[0];
@@ -26,7 +12,8 @@ function FileUploadComponent({targetServer, setUploading, setFileName, uploading
 		const formData = new FormData();
 		formData.append("file", file);
 		formData.append("uniqueColumns", JSON.stringify(uniqueColumns));// Form data only sends strings.
-		formData.append("relationConfig", JSON.stringify(tempRelationConfig));
+		formData.append("keyMaps", JSON.stringify(keyColumnMapping));
+		formData.append("relations", JSON.stringify(relations));
 
 		setUploading(true);
 		setResult("Uploading...");
