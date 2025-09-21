@@ -3,31 +3,36 @@ import { ExcelRow, RelationSetting, Sheet, RelationConfig } from "../types/types
 
 export default function validateInterSheetRelations(
     mainSheetName: string,
-    sheets: Sheet[],
+    sheets: Map<string,Sheet>,
     config: RelationConfig
-): void{
+): Map<string, Sheet>{
     const extraMainRows: ExcelRow[] = [];
-    const mainSheet = sheets.find(sheet => sheet.name === mainSheetName);
-    if (!mainSheet) return;
+    const mainSheet = sheets.get(mainSheetName);
+    // Return unmodified sheets. Todo: Throw exception instead
+    if (!mainSheet) return sheets;
     
-    for (const sheet of sheets) {
-        if (sheet.name !== mainSheetName) {
-            validateSheetRelation(mainSheet,
+    for (const [sheetName, sheet] of sheets) {
+        if (sheetName !== mainSheetName) {
+            const result = validateSheetRelation(
+                mainSheet,
                 sheet,
-                config.sheetname!,
-                extraMainRows
+                config.sheetname ?? { min: 0, max: -1 },
             );
-        } else continue;
+            extraMainRows.push(...result["extraRows"]);
+        }
     }
-    if(extraMainRows && extraMainRows.length > 0) mainSheet.rows.push(...extraMainRows);
+    if (extraMainRows && extraMainRows.length > 0) mainSheet.rows.push(...extraMainRows);
+    return sheets;
 }
 
-function validateSheetRelation(
+export function validateSheetRelation(
     mainSheet: Sheet,
     childSheet: Sheet,
     relation: RelationSetting,
-    newMainRows: ExcelRow[]
-): void{
+): {}{
+    let errorCount: number = 0
+    const result = {};
+    const newMainRows: ExcelRow[] = [];
     const mainKeys = pluckfromRows(mainSheet.rows, mainSheet.keyColumn);
     const childIdRowMap = indexByRowID(childSheet.rows, childSheet.keyColumn); 
     
@@ -78,10 +83,17 @@ function validateSheetRelation(
         }
 
         else {
-            const errorCount = relatedChildRows.filter(childRow => childRow._valid === false).length;
-            if (errorCount > 0) row._valid = false;
+            errorCount = relatedChildRows.filter(childRow => childRow._valid === false).length;
+            if (errorCount > 0){
+                row._valid = false;
+                if (!mainSheet.problemChildren) mainSheet.problemChildren = new Map<string, number>();
+                mainSheet.problemChildren.set(childSheet.name, errorCount);
+            }
         }
     }
+    result["errorCount"] = errorCount;
+    result["extraMainRows"] = newMainRows;
+    return result;    
 }
 
 function indexByRowID(rows: ExcelRow[], rowID:string): Map<string, ExcelRow[]> {
