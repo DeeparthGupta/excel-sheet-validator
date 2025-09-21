@@ -3,9 +3,9 @@ export const retrieveData = async (filename, targetServer) => {
         const response = await fetch(`${targetServer}/retrieve?filename=${filename}`);
         const responseData = await response.json();
 
-        if (response.status === 200 && Object.keys(responseData.data).length > 0) {
+        if (response.status === 200 && Object.keys(responseData.sheets).length > 0) {
             //console.log(JSON.stringify(responseData.data, null, 2));
-            return { fileName:responseData.filename, data: responseData.data, message: responseData.message || "Data retrieved" };
+            return { fileName:responseData.filename, data: responseData.sheets, message: responseData.message || "Data retrieved" };
         } else {
             return { fileName:responseData.filename, data: {}, message: "Failed to retrieve data:" + (responseData.error || "Unknown error")};
         }
@@ -42,7 +42,7 @@ export const retrieveData = async (filename, targetServer) => {
     }
 } */
 
-export const revalidate = async (modRow, filename, targetServer, sheetName, relationConfig = null) => {
+export const revalidate = async (modRow, filename, mainSheet = "Main Table", uniqueColumns, targetServer, sheetName, relationConfig = null) => {
     //console.log(`ModRow: ${modRow}`);
     try {
         const response = await fetch(`${targetServer}/update`, {
@@ -51,8 +51,10 @@ export const revalidate = async (modRow, filename, targetServer, sheetName, rela
             body: JSON.stringify({
                 filename: filename,
                 sheetName: sheetName,
+                mainSheet: mainSheet,
                 row: modRow,
                 relationConfig: relationConfig,
+                uniqueColumn: uniqueColumns
             })
         });
         const result = await response.json();

@@ -44,7 +44,7 @@ function App() {
 
 	const handleCellValueChange = async (params, sheetName) => {
 		const editedRow = params.data;
-		const { success, message } = await revalidate(editedRow, filename, targetServer, sheetName, tempRelationConfig);
+		const { success, message } = await revalidate(editedRow, filename, uniqueColumns, targetServer, sheetName, tempRelationConfig);
 		setResult(message);
 		if (success) {
 			const { data: newData, message: retrievalMessage } = await retrieveData(filename, targetServer);
