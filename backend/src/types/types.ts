@@ -24,11 +24,17 @@ export interface RelationConfig {
 export type RelationSetting = {
     min: number;
     max: number;
-    keyColumn: string;
 }
 
 export interface Sheet {
     name: string;
     keyColumn: string;
     rows: ExcelRow[];
+    problemChildren?: Map<string, number>;
 }
+
+export interface WorkbookMapping{
+    [sheetName: string]: [keyColumn: string]
+}
+
+export type Workbook = Map<string,Sheet>
