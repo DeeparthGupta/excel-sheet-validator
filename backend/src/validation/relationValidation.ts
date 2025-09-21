@@ -1,27 +1,44 @@
-import { ExcelRow, RelationSetting, Sheet, RelationConfig } from "../types/types.js";
+import { ExcelRow, RelationSetting, Sheet, RelationConfig, Workbook } from "../types/types.js";
 
 
 export default function validateInterSheetRelations(
     mainSheetName: string,
-    sheets: Map<string,Sheet>,
+    sheets: Workbook,
     config: RelationConfig
 ): Map<string, Sheet>{
-    const extraMainRows: ExcelRow[] = [];
+    //const extraMainRows: ExcelRow[] = [];
+    const allOrphanKeys: Set<number> = new Set();
     const mainSheet = sheets.get(mainSheetName);
     // Return unmodified sheets. Todo: Throw exception instead
-    if (!mainSheet) return sheets;
+    if (!mainSheet) {
+        console.log("Main Sheet name not found.");
+        return sheets;
+    }
     
-    for (const [sheetName, sheet] of sheets) {
+    for (const [sheetName, sheet] of sheets.entries()) {
         if (sheetName !== mainSheetName) {
             const result = validateSheetRelation(
                 mainSheet,
                 sheet,
-                config.sheetname ?? { min: 0, max: -1 },
+                config[sheetName] ?? { min: 0, max: -1 },
             );
-            extraMainRows.push(...result["extraRows"]);
+            result["orphanKeys"].forEach((key: number) => allOrphanKeys.add(key));
         }
     }
-    if (extraMainRows && extraMainRows.length > 0) mainSheet.rows.push(...extraMainRows);
+    if (allOrphanKeys.size > 0) {
+        const extraMainRows: ExcelRow[] = [];
+        allOrphanKeys.forEach(key => {
+            const emptyMainRow: ExcelRow = {
+                [mainSheet.keyColumn]: key,
+                _index: mainSheet.rows.length + extraMainRows.length,
+                _sheetName: mainSheet.name,
+                _valid: false,
+                _errors: [mainSheet.keyColumn]
+            };
+            extraMainRows.push(emptyMainRow)
+        });
+        mainSheet.rows.push(...extraMainRows);
+    }
     return sheets;
 }
 
@@ -29,42 +46,35 @@ export function validateSheetRelation(
     mainSheet: Sheet,
     childSheet: Sheet,
     relation: RelationSetting,
-): {}{
+): {[key: string]: any }{
     let errorCount: number = 0
-    const result = {};
-    const newMainRows: ExcelRow[] = [];
+    const result:{[key:string]:any} = {};
+    const orphanedKeys = new Set<number>();
     const mainKeys = pluckfromRows(mainSheet.rows, mainSheet.keyColumn);
     const childIdRowMap = indexByRowID(childSheet.rows, childSheet.keyColumn); 
     
     // Mark all the orphaned chidlren as invalid
-    const mainIDSet = new Set(mainKeys.map(String));
+    const mainIDSet = new Set(mainKeys.map(Number));
     for (const [childKey, childRows] of childIdRowMap.entries()) {
-        if (!mainIDSet.has(childKey)) {
+        const childKeyNum = Number(childKey)
+        if (!mainIDSet.has(childKeyNum)) {
             childRows.forEach(childRow => {
                 childRow._valid = false;
                 childRow._errors.push(childSheet.keyColumn);
             });
-
-            // Add empty rows corresponding to the orphaned children
-            const emptyMainRow: ExcelRow = {
-                [mainSheet.keyColumn]: childKey,
-                _index: mainSheet.rows.length,
-                _sheetName: mainSheet.name,
-                _valid: false,
-                _errors: [mainSheet.keyColumn]
-            }
-            
-            // Add to the main rows at the end after processing.
-            newMainRows.push(emptyMainRow);
-            // Prevent duplicate empty rows if multiple children share the same orphan key
+            // Add orphaned row keys to the return
+            orphanedKeys.add(childKeyNum);
+            // Prevent duplicate empty detections if multiple children share the same orphan key
             mainIDSet.add(childKey)
         }
     }
 
     for (const row of mainSheet.rows) {
-        const mainKey = row[mainSheet.keyColumn];
+        const mainKey = Number(row[mainSheet.keyColumn]);
         const relatedChildRows = childIdRowMap.get(mainKey) ?? [];
         const relatedChildRowCount = relatedChildRows.length;
+        // Adding row count of related children to the main row
+        row[childSheet.name] = String(relatedChildRowCount);
 
         if (relatedChildRowCount < relation.min) {
             row._valid = false;
@@ -86,21 +96,24 @@ export function validateSheetRelation(
             errorCount = relatedChildRows.filter(childRow => childRow._valid === false).length;
             if (errorCount > 0){
                 row._valid = false;
-                if (!mainSheet.problemChildren) mainSheet.problemChildren = new Map<string, number>();
-                mainSheet.problemChildren.set(childSheet.name, errorCount);
             }
+            row[`${childSheet.name}_errors`] = errorCount
         }
     }
-    result["errorCount"] = errorCount;
-    result["extraMainRows"] = newMainRows;
+    //result["errorCount"] = errorCount;
+    result["orphanKeys"] = orphanedKeys;
     return result;    
 }
 
-function indexByRowID(rows: ExcelRow[], rowID:string): Map<string, ExcelRow[]> {
-    const map = new Map<string, ExcelRow[]>();
+function indexByRowID(rows: ExcelRow[], rowID: string): Map<number, ExcelRow[]> {
+    const map = new Map<number, ExcelRow[]>();
     for (const row of rows) {
-        if (!map.has(row[rowID])) map.set(row[rowID], []);
-        map.get(row[rowID])!.push(row);
+        const key = Number(row[rowID]);
+        if (isNaN(key)) continue;
+
+        if (!map.has(key)) map.set(key, []);
+        
+        map.get(key)!.push(row);
     }
     return map;
 };

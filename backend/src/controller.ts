@@ -5,9 +5,9 @@ import multer from "multer";
 import { retrieveSheetFromWorkbook, retrieveWorkbookFromMemory, saveSheetInWorkbook, saveWorkbookToMemory } from "./services/SheetStorageService.js";
 import { validateAllSheets, validateSheetData } from "./validation/validators.js";
 import { fileURLToPath } from "url";
-import { NoSQLDataSource, RDBMSDataSource } from "./db/data-sources.js";
+/* import { NoSQLDataSource, RDBMSDataSource } from "./db/data-sources.js";
 import { CustomerPost } from "./db/CustomerPost.js";
-import { CustomerMongo } from "./db/CustomerMongo.js";
+import { CustomerMongo } from "./db/CustomerMongo.js"; */
 import validateInterSheetRelations from "./validation/relationValidation.js";
 import { ExcelRow, RelationConfig, RelationSetting, Sheet, Workbook } from "./types/types.js";
 import fs from "fs";
@@ -48,6 +48,7 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
             const uniqueColumns = parseFormDataStrings(req.body, "uniqueColumns");
             const keyMaps = parseFormDataStrings(req.body, "keyMaps");
             const relations = parseFormDataStrings(req.body, "relations");
+            const mainSheetName = req.body.mainSheet;
 
             const validatedSheets = validateAllSheets(sheets, uniqueColumns);  
             const testArtifactsDir = path.join(currentDir, "..", "testArtifacts");
@@ -56,10 +57,11 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
             }
             const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
             const outFile = path.join(testArtifactsDir, `${workBookName}_${timestamp}-Intra.json`);
-            fs.writeFileSync(outFile, JSON.stringify(validatedSheets, null, 2), "utf-8");
+            const validatedSheetsObj = Object.fromEntries(validatedSheets)
+            fs.writeFileSync(outFile, JSON.stringify(validatedSheetsObj, null, 2), "utf-8");
 
             if (relations && keyMaps) {
-                const mainSheetName: string = "Main Table";
+                //const mainSheetName: string = "Main Table";
                 const sheetMap: Map<string, Sheet> = new Map();
                 for (const [name, rows] of validatedSheets.entries()) {
                     sheetMap.set(name, {
@@ -74,15 +76,24 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
                         return [sheetName, config as RelationSetting];
                     })
                 ); 
+
+                //console.log(`Relation Config: ${JSON.stringify(relationConfig, null, 2)}`);
                 
                 const interValidatedSheets = validateInterSheetRelations(
                     mainSheetName, sheetMap, relationConfig
                 );
+
+                const outFile = path.join(testArtifactsDir, `${workBookName}_${timestamp}-PostValid.json`);
+                const interValidatedSheetsObj = Object.fromEntries(interValidatedSheets)
+                fs.writeFileSync(outFile, JSON.stringify(interValidatedSheetsObj, null, 2), "utf-8");
+
                 saveWorkbookToMemory(workBookName, interValidatedSheets);
                 const sheetNames = Array.from(interValidatedSheets.keys());
+                const message = `${workBookName} ingested and validated. \n ${sheetNames.length} sheets found.`;
+                console.log(message);
 
                 res.status(200).json({
-                    message: `${workBookName} ingested and validated. \n ${sheetNames.length} sheets found.`,
+                    message: message,
                     fileName: workBookName,
                     sheets: sheetNames
                 });
@@ -144,7 +155,12 @@ export async function retrieveFileData(req: Request, res: Response) {
         }
     }
 
-    const dataObject = Object.fromEntries(result);
+    const outBoundData: Map<string, ExcelRow[]> = new Map();
+    for (const [sheetName, sheetData] of result.entries()) {
+        outBoundData.set(sheetName, sheetData.rows);
+    }
+
+    const dataObject = Object.fromEntries(outBoundData);
     //console.log(`Filename: ${fileName} \n dataObject: ${JSON.stringify(dataObject, null, 2)}`)
     const testArtifactsDir = path.join(currentDir, "..", "testArtifacts");
     if (!fs.existsSync(testArtifactsDir)) {
@@ -156,7 +172,7 @@ export async function retrieveFileData(req: Request, res: Response) {
     res.status(200).json({
         message: "File data retrieved successfully.",
         filename: fileName,
-        data: dataObject
+        sheets: dataObject
     });
 }
 
@@ -258,13 +274,14 @@ export async function revalidate(req: Request, res: Response) {
 
 function parseFormDataStrings(body: any, fieldname: string) {
     const formData = body[fieldname];
+    let result;
     if (typeof formData === "string") {
         try {
-            const result = JSON.parse(formData);
+            result = JSON.parse(formData);
         } catch (e) {
             console.log(`Unable to parse ${fieldname}`)
             return undefined
         }
     }
-    return formData;
+    return result;
 }
