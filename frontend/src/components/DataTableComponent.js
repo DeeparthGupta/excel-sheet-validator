@@ -9,8 +9,8 @@ ModuleRegistry.registerModules([ AllCommunityModule ]);
 function DataTableComponent({ rows, tableRef, excludedFields, onCellValueChanged, searchQuery, onHasMatch }) {
 	
 	const displayColumns = rows.length > 0
-	? Object.keys(rows[0]).filter(key => !excludedFields.includes(key))
-	: [];
+		? Object.keys(rows[0]).filter(key => !excludedFields.includes(key) && !key.endsWith("_errors"))
+		: [];
 	
 	const firstColumn = displayColumns[0];
 	const noFirstColumn = displayColumns.slice(1);
@@ -28,21 +28,41 @@ function DataTableComponent({ rows, tableRef, excludedFields, onCellValueChanged
 			editable: false,
 			filter: false,
 			flex: 1,
-		}] : []),
-		
-		...noFirstColumn.map(column => ({
-			headerName: column,
-			field: column,
-			editable: true,
-			flex:1,
-			filter: true,
 			cellClass: params =>
 				params.data._valid === false
 				&& params.data._errorCols.length > 0
 				&& params.data._errorCols.includes(params.colDef.field)
 				? "cell-error"
 				: undefined,
-		})),
+		}] : []),
+		
+		...noFirstColumn.map(column => {
+			const errorField = `${column}_errors`;
+			return {
+				headerName: column,
+				field: column,
+				editable: true,
+				flex: 1,
+				filter: true,
+				cellRenderer: params => {
+					const errorVal = params.data[errorField];
+					return errorVal !== undefined
+						? `${params.value} (${errorVal})`
+						: params.value
+				},
+				cellClass: params => {
+					const errorVal = params.data[errorField];
+					if (errorVal !== undefined) {
+						return errorVal > 0 ? "cell-error" : "cell-ok";
+					}
+					return params.data._valid === false
+						&& params.data._errorCols.length > 0
+						&& params.data._errorCols.includes(params.colDef.field)
+						? "cell-error"
+						: undefined;
+				},
+			};
+		}),
 		
 	];
 	
