@@ -90,7 +90,7 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
                 saveWorkbookToMemory(workBookName, interValidatedSheets);
                 const sheetNames = Array.from(interValidatedSheets.keys());
                 const message = `${workBookName} ingested and validated. \n ${sheetNames.length} sheets found.`;
-                console.log(message);
+                //console.log(message);
 
                 res.status(200).json({
                     message: message,
@@ -241,24 +241,57 @@ export async function revalidate(req: Request, res: Response) {
     const uniqueColumns = req.body.uniqueColumns;
     const row = req.body.row;
 
+    // Ensuring 
+
     if (!filename || !row || !sheetName) {
         res.status(400).json({ error: "Missing data or location" })
         return;
     }
 
     const sheet = retrieveSheetFromWorkbook(filename, sheetName);
-    const mainSheet = retrieveSheetFromWorkbook(filename, mainSheetName)!;
+    const mainSheet = retrieveSheetFromWorkbook(filename, mainSheetName);
 
-    if (sheet && sheet !== undefined && sheet.rows.length > 0 && row !== -1) {
+    /* console.log(`Main Sheet: ${JSON.stringify(mainSheet, null, 2)} \n`);
+    console.log(`Sheet: ${JSON.stringify(sheet, null, 2)} \n`);
+    console.log(`Unique Columns: ${JSON.stringify(uniqueColumns, null, 2)} \n`) */;
+
+    if (mainSheet && mainSheet !== undefined && sheet && sheet !== undefined && sheet.rows.length > 0 && row !== -1) {
         const sheetData = sheet.rows;
         const index = sheetData.findIndex(record => row._index === record._index);
         sheetData[index] = row;
         const validatedSheetRows = validateSheetData(sheetData as ExcelRow[], uniqueColumns[sheetName] ?? []);
         sheet.rows = validatedSheetRows;
         
+        saveSheetInWorkbook(filename, sheetName, sheet)
+
+        if (sheetName === mainSheetName) {
+            mainSheet.rows.forEach(row => {
+                // Check if the _error columns exist
+                const errorColumns = Object.keys(row).filter(key => /_errors$/.test(key))
+                const hasErrors = errorColumns.some(col => row[col] > 0);
+
+                // Check if any of the unique colums exist
+                const uniqueColumnKeys = uniqueColumns[mainSheetName]!;
+                const missingKeys = uniqueColumnKeys.filter(key => !Object.keys(row).includes(key));
+
+                row._valid = !hasErrors && missingKeys.length === 0;
+
+                const rowID = Object.keys(row)[0] ?? "";
+                row._errorCols = row._valid
+                    ? []
+                    : (missingKeys.length > 0 ? [rowID] : []);
+            });
+
+            res.status(200).json({ message: "Main sheet updated successfully" })
+            return;
+        }
+        
         const sheetsToValidate: Workbook = new Map();
         sheetsToValidate.set(sheet.name, sheet);
         sheetsToValidate.set(mainSheet.name, mainSheet);
+
+
+        //console.log("sheetsToValidate:", Array.from(sheetsToValidate.keys()));
 
         const interValidatedSheets = validateInterSheetRelations(mainSheetName, sheetsToValidate, relationConfig);
         for (const [sheetName, sheetData] of interValidatedSheets.entries()) {
@@ -268,7 +301,8 @@ export async function revalidate(req: Request, res: Response) {
         res.status(200).json({ message: "File changes saved" });
     } else {
         res.status(400).json({ error: "File data could not be modified" });
-        return
+        console.log("Main Sheet issue?");
+        return;
     }
 }
 

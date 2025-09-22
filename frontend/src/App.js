@@ -38,13 +38,14 @@ function App() {
 		"BankAccounts (oneToMany)": relationPresets.oneToMany
 	}
 	
+	const mainSheetName = "Main Table";
 	const targetServer = process.env.REACT_APP_TARGET_SERVER || "http://localhost:3001";
 	const excludedFields = ["_valid", "_index", "_errorCols", "_sheetName"];
 
 
 	const handleCellValueChange = async (params, sheetName) => {
 		const editedRow = params.data;
-		const { success, message } = await revalidate(editedRow, filename, uniqueColumns, targetServer, sheetName, tempRelationConfig);
+		const { success, message } = await revalidate(editedRow, filename, mainSheetName, uniqueColumns, targetServer, sheetName, tempRelationConfig);
 		setResult(message);
 		if (success) {
 			const { data: newData, message: retrievalMessage } = await retrieveData(filename, targetServer);

@@ -27,6 +27,7 @@ export function retrieveSheetFromWorkbook(workbookName: string, sheetName: strin
             return sheet;
         }
     }
+    console.log(`Unable to find ${sheetName} in ${workbookName}`);
     return undefined;
 }
 
