@@ -3,14 +3,14 @@ export const retrieveData = async (filename, targetServer) => {
         const response = await fetch(`${targetServer}/retrieve?filename=${filename}`);
         const responseData = await response.json();
 
-        if (response.ok && responseData.data.length > 0) {
+        if (response.status === 200 && Object.keys(responseData.sheets).length > 0) {
             //console.log(JSON.stringify(responseData.data, null, 2));
-            return { data: responseData.data, message: "Data retrieved" };
+            return { fileName:responseData.filename, data: responseData.sheets, message: responseData.message || "Data retrieved" };
         } else {
-            return { data: [], message: "Failed to retrieve data:" + response.error };
+            return { fileName:responseData.filename, data: {}, message: "Failed to retrieve data:" + (responseData.error || "Unknown error")};
         }
     } catch (err) {
-        return { data: [], message: "Unable to retrieve data:" + err };
+        return { data: {}, message: "Unable to retrieve data:" + err };
     }
 };
 
@@ -42,7 +42,7 @@ export const retrieveData = async (filename, targetServer) => {
     }
 } */
 
-export const revalidate = async (modRow, filename, targetServer) => {
+export const revalidate = async (modRow, filename, mainSheetName, uniqueColumns, targetServer, sheetName, relationConfig = null) => {
     //console.log(`ModRow: ${modRow}`);
     try {
         const response = await fetch(`${targetServer}/update`, {
@@ -50,7 +50,11 @@ export const revalidate = async (modRow, filename, targetServer) => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 filename: filename,
-                row: modRow
+                sheetName: sheetName,
+                mainSheet: mainSheetName,
+                row: modRow,
+                relationConfig: relationConfig,
+                uniqueColumns: uniqueColumns
             })
         });
         const result = await response.json();
@@ -65,22 +69,31 @@ export const revalidate = async (modRow, filename, targetServer) => {
 };
 
 export const dataDiff = (oldData, newData) => {
-    const diff = []
-    for (let i = 0; i < oldData.length; i++) {
-        const oldRow = oldData[i];
-        const newRow = newData[i];
-        for (const key in newRow) {
-            if (Array.isArray(oldRow[key]) && Array.isArray(newRow[key])) {
-                if (JSON.stringify(oldRow[key]) !== JSON.stringify(newRow[key])) {
-                    //console.log(`Row ${i} key "${key}" changed (array):`, oldRow[key], '=>', newRow[key]);
-                    diff.push(newRow);
+    const diff = {};
+    for (const sheetName of Object.keys(newData)) {
+        const oldRows = oldData[sheetName] || [];
+        const newRows = newData[sheetName] || [];
+        diff[sheetName] = [];
+        for (let i = 0; i < newRows.length; i++) {
+            const oldRow = oldRows[i];
+            const newRow = newRows[i];
+            
+            if (!oldRow) {
+                diff[sheetName].push(newRow);
+                continue;
+            }
+            for (const key in newRow) {
+                if (Array.isArray(oldRow[key]) && Array.isArray(newRow[key])) {
+                    if (JSON.stringify(oldRow[key]) !== JSON.stringify(newRow[key])) {
+                        diff[sheetName].push(newRow);
+                        break
+                    }
+                }
+                else if (oldRow[key] !== newRow[key]) {
+                    diff[sheetName].push(newRow);
                     break;
                 }
-            } else if (oldRow[key] !== newRow[key]) {
-                //console.log(`Row ${i} key "${key}" changed (array):`, oldRow[key], '=>', newRow[key]);
-                diff.push(newRow);
-                break;
-            } 
+            }
         }
     }
     return diff;

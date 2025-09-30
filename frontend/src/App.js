@@ -1,44 +1,64 @@
 import { useEffect, useRef, useState } from "react";
 import FileUploadComponent from "./components/FileUploadComponent";
-import DataTableComponent from "./components/DataTableComponent";
 import DBUploadComponent from "./components/DBUploadComponent";
 import { revalidate, retrieveData, dataDiff } from "./utils";
+import SheetTabs from "./components/SheetTabsComponent";
 
 
 function App() {
 	const [result, setResult] = useState("");
 	const [uploading, setUploading] = useState(false);
-	const [data, setData] = useState([]);
+	const [data, setData] = useState({});
 	const [filename, setFileName] = useState("");
-	const [filter, setFilter] = useState("all");
-	const gridRef = useRef();
+	const gridRefs = useRef({});
+
+	const keyColumnMapping = {
+		"Main Table": "RowNumber",
+		"contactPerson (oneToOne)": "MaintableRowNumber",
+		"BankAccounts (oneToMany)": "MaintableRowNumber",
+		"Addresses (ZeroToMany)": "MaintableRowNumber"
+	}
+
+	const relationPresets = {
+		oneToOne: { min: 1, max: 1 },
+		oneToMany: { min: 1, max: -1 },
+		zeroToMany: { min: 0, max: -1 },
+		zeroOrOne: { min: 0, max: 1 }
+	}
+	const uniqueColumns = {
+		"Main Table": ["Number", "Email"],
+		"Addresses (ZeroToMany)": ["Street", "Street2", "City", "State", "Pincode", "Country"],
+		"contactPerson (oneToOne)": ["Contact Person Name", "Mobile Number", "Email Address"],
+		"BankAccounts (oneToMany)":["Bank Account IFSC","Account Number","IBAN"]
+	}
+
+	const tempRelationConfig = {
+		"Addresses (ZeroToMany)": relationPresets.oneToMany,
+		"contactPerson (oneToOne)": relationPresets.oneToOne,
+		"BankAccounts (oneToMany)": relationPresets.oneToMany
+	}
 	
+	const mainSheetName = "Main Table";
 	const targetServer = process.env.REACT_APP_TARGET_SERVER || "http://localhost:3001";
+	const excludedFields = ["_valid", "_index", "_errorCols", "_sheetName"];
 
-	const excludedFields = ["_valid", "_index", "_errors"];
 
-	/* const allModel = null;
-	const validModel = { _valid: { filterType: "set", values: [true] } };
-	const invalidModel = { _valid: { filterType: "set", values: [false] } };
- */
-	const handleCellValueChange = async params => {
+	const handleCellValueChange = async (params, sheetName) => {
 		const editedRow = params.data;
-		const { success, message } = await revalidate(editedRow, filename, targetServer);
+		const { success, message } = await revalidate(editedRow, filename, mainSheetName, uniqueColumns, targetServer, sheetName, tempRelationConfig);
 		setResult(message);
 		if (success) {
 			const { data: newData, message: retrievalMessage } = await retrieveData(filename, targetServer);
 			const changedRows = dataDiff(data, newData);
 			//console.log(`Changed Rows: ${JSON.stringify(changedRows, null, 2)}`);
 
-			if (gridRef.current && gridRef.current.api && changedRows.length > 0) {
-				gridRef.current.api.applyTransaction({ update: changedRows });
-				/* changedRows.forEach(row => {
-					const node = gridRef.current.api.getRowNode(String(row._index));
-					if (node) gridRef.current.api.refreshCells({ rowNodes: [node], force: true });
-				}); */
-				//gridRef.current.api.redrawRows();
-			}
-
+			Object.keys(changedRows).forEach(sheet => {
+				const gridRef = gridRefs.current[sheet];
+				if (gridRef && gridRef.api && changedRows.length > 0) {
+					gridRef.api.applyTransaction({ update: changedRows });
+				}
+			});
+			
 			setResult(retrievalMessage);
 			setData(newData);
 		}
@@ -53,12 +73,19 @@ function App() {
 
 	const isSameModel = (model) => JSON.stringify(filter) === JSON.stringify(model); */
 
+	const relationConfigTranslation = Object.fromEntries(
+		Object.entries(tempRelationConfig).map(([sheet, preset]) => {
+			return [sheet, { ...preset }];
+		})	
+	);
+
 	// Get uploaded file data using the filename sent in response to upload
 	useEffect(() => {
 		if (filename) {
 			(async () => {
-				const { data, message } = await retrieveData(filename, targetServer);
-				console.log(data);
+				const { fileName, data, message } = await retrieveData(filename, targetServer);
+				console.log(`Filename: ${fileName}\n`);
+				console.log(`Data: ${JSON.stringify(data, null, 2)}`);
 				setData(data);
 				setResult(message);
 			})();
@@ -75,45 +102,23 @@ function App() {
 				setFileName={setFileName}
 				uploading={uploading}
 				setResult={setResult}
+				keyColumnMapping={keyColumnMapping}
+				uniqueColumns={uniqueColumns}
+				relations={relationConfigTranslation}
 			/>
 			<pre style={{ background: "#f4f4f4", padding: 16, marginTop: 24 }}>{result}</pre>
 			<DBUploadComponent
 				filename={filename}
 				targetServer={targetServer}
 			/>
-			{Array.isArray(data) && data.length > 0 &&(
+			{Object.keys(data).length > 0 && (
 				<div style={{ marginTop: 24 }}>
-					<h4>Sheet Contents</h4>
-					<DataTableComponent
-						rows={data}
-						tableRef={gridRef}
+					<SheetTabs
+						data={data}
+						gridRefs={gridRefs}
 						excludedFields={excludedFields}
 						onCellValueChanged={handleCellValueChange}
-						filterMode={filter}
 					/>
-					<div style={{ marginBottom: 12 }}>
-						<button
-							onClick={() => setFilter("all")}
-							disabled={filter === "all"}
-							style={{ marginRight: 8 }}
-						>
-							Show All
-						</button>
-						<button
-							onClick={() => setFilter("valid")}
-							disabled={filter === "valid"}
-							style={{ marginRight: 8 }}
-						>
-							Show Valid
-						</button>
-						<button
-							onClick={() => setFilter("invalid")}
-							disabled={filter === "invalid"}
-							style={{ marginRight: 8 }}
-						>
-							Show Invalid
-						</button>
-					</div>					
 				</div>
 			)}
 		</div>

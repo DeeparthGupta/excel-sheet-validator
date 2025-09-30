@@ -4,7 +4,11 @@
 
 .cell-error {
   background-color: #f72424ff !important;
-} 
+}
+
+.cell-ok{
+  background-color: #77e977ff !important;
+}
 
 .data-grid-base{
   height: 600px;

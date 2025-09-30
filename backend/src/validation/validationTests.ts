@@ -1,14 +1,10 @@
 import { parse, isValid } from "date-fns";
+import { UniquenessViolation } from "../types/types.js";
 
-export type UniquenessViolation = {
-    field: string;
-    value: any;
-    indices: number[];
-};
 
 export function rowvalidator(
     row: Record<string, any>,
-    excludekeys: string[] = ["_index", "_valid", "_errors"],
+    excludekeys: string[] = ["_index", "_valid", "_errorCols", "_sheetName"],
     defaultVal: string = "17:00"
 ): string[] {
     const errorKeys: Set<string> = new Set();
@@ -91,6 +87,8 @@ export function uniquenessValidator(
     return result;
 }
 
+
+// Eventually replace uniqunessValidator and turn it into a wrapper for entire sheet validation
 export function rowUniquenessTest(
     uniquenessMap: Map<string, Map<any, Set<number>>>,
     uniqueFields: string[] = ["Email", "Number"],

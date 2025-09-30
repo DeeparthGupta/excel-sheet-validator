@@ -1,6 +1,5 @@
-import path from "path";
 import { rowvalidator, uniquenessValidator } from "./validationTests.js";
-import fs from "fs/promises";
+import { ExcelRow } from "../types/types.js";
 
 function objectMerge(object1, object2) {
 
@@ -25,8 +24,8 @@ function objectMerge(object1, object2) {
     return mergedObject;
 }
 
-export function validateFileData(fileData: Record<string,any>[]): Record<string,any>[] {
-    let uniquenessViolations: Record<string, string[]> = uniquenessValidator(["Number", "Email"], fileData);
+export function validateSheetData(fileData: ExcelRow[], uniqueFields:string[]): ExcelRow[] {
+    let uniquenessViolations: Record<string, string[]> = uniquenessValidator(uniqueFields, fileData);
     let rowViolations = fileData.reduce((accumulator, record) => {
         const errors = rowvalidator(record);
         
@@ -46,16 +45,29 @@ export function validateFileData(fileData: Record<string,any>[]): Record<string,
         const row = fileDataCopy.find(r => r._index === index); // Use index value from data
         
         row._valid = false;
-        row._errors = errorKeys;
+        row._errorCols = errorKeys;
     });
 
-    fileDataCopy.forEach((record: { _index: string; _valid: boolean; _errors: string[]; }) => {
+    fileDataCopy.forEach((record: { _index: string; _valid: boolean; _errorCols: string[]; }) => {
         if (!(record._index in allViolations)) {
             record._valid = true;
-            record._errors = [];
+            record._errorCols = [];
         }
     });
 
     return fileDataCopy;
 
+}
+
+export function validateAllSheets(
+    sheets: Map<string, ExcelRow[]>,
+    uniqueFields: { [key: string]: string[] }
+): Map<string, ExcelRow[]>{
+
+    const validatedSheets = new Map<string, ExcelRow[]>();
+    for (const [sheetName, sheetRows] of sheets.entries()) {
+        validatedSheets.set(sheetName, validateSheetData(sheetRows, uniqueFields[sheetName] ?? []));
+    }
+    //console.log("validateAllSheets output keys:", Array.from(validatedSheets.keys()));
+    return validatedSheets;
 }

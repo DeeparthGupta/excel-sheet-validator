@@ -1,7 +1,16 @@
 import { useRef } from "react";
 
-function FileUploadComponent({targetServer, setUploading, setFileName, uploading, setResult}) {
-    const fileInputRef = useRef();
+function FileUploadComponent({
+	targetServer,
+	setUploading,
+	setFileName,
+	uploading,
+	setResult,
+	keyColumnMapping,
+	uniqueColumns,
+	relations
+}) {
+	const fileInputRef = useRef();
 
     const fileUpload = async () => {
 		const file = fileInputRef.current.files[0];
@@ -11,6 +20,10 @@ function FileUploadComponent({targetServer, setUploading, setFileName, uploading
 		}
 		const formData = new FormData();
 		formData.append("file", file);
+		formData.append("uniqueColumns", JSON.stringify(uniqueColumns));// Form data only sends strings.
+		formData.append("keyMaps", JSON.stringify(keyColumnMapping));
+		formData.append("relations", JSON.stringify(relations));
+		formData.append("mainSheet", "Main Table");
 
 		setUploading(true);
 		setResult("Uploading...");
@@ -22,7 +35,7 @@ function FileUploadComponent({targetServer, setUploading, setFileName, uploading
 	  		});
 			const responseData = await response.json();
 
-			if (response.ok && responseData.fileName) {
+			if (response.status === 200 && responseData.fileName) {
 				setFileName(responseData.fileName);
 			}
 		} catch (err) {
