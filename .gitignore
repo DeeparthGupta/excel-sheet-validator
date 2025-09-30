@@ -1,6 +1,0 @@
-**/node_modules/
-**/uploads/
-**/dist/
-**/dist-tests/
-**/testArtifacts/
-.github/copilot-instructions.md
