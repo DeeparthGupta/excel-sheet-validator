@@ -4,9 +4,9 @@ type RowData = Record<string, any>;
 type UniquenessMap = Map<string, Map<any, Set<number>>>;
 type ErrorMap = Map<RowID, string[]>;
 
-type ColumnData = {
+interface ColumnData {
     displayName: string;
-    type?: any;
+    constraints?: any[];
 }
 
 interface RowReference{
@@ -16,6 +16,7 @@ interface RowReference{
 
 interface SerializedRow {
     [key: string]: any;
+    sheetID: string;
     id: number;
     valid: boolean;
     errors: string[];
@@ -23,12 +24,11 @@ interface SerializedRow {
 
 
 export class Sheet{
-    sheetID: string;
+    sheetID: string; // ULID to identify sheet anywhere
     sheetName: string;
     columns: Map<ColumnID, ColumnData> = new Map();
     rows: Map<RowID, RowData> = new Map();
     graveyard: RowID[] = []; 
-    columnConstraints?: Map<ColumnID, any>;
     errors?: ErrorMap;
 
     private _validRowCount: number = 0;
@@ -38,12 +38,12 @@ export class Sheet{
     private _columnCounter: number = 1;
     private _rowCounter: RowID = 1n;
 
-    constructor(id: string, name: string, columns?: ColumnData[] | string[], rows?: RowData[]) {
+    constructor(id: string, name: string, columns?: ColumnData[], rows?: RowData[]) {
         this.sheetID = id;
         this.sheetName = name;
 
         if (columns && columns.length > 0) {
-            columns.forEach((column: ColumnData | string) => {
+            columns.forEach((column: ColumnData) => {
                 this.addColumn(column);
             });
         }
@@ -67,24 +67,42 @@ export class Sheet{
         return this._invalidRowCount;
     }
 
-    addColumn(column: ColumnData | string): void {
+    addColumn(column: ColumnData): void {
         const columnId:string = `col${this._columnCounter++}`;
-        if (typeof column === 'string'){
-            const columnObj: ColumnData = {
-                displayName: column, 
-                type: null
-            };
-            this.columns.set(columnId, columnObj);
-            return;
-        }
         this.columns.set(columnId,column)
     }
     
     removeColumn(columnId: ColumnID): void {
         this.columns.delete(columnId);
-        if (this.columnConstraints) {
-            this.columnConstraints.delete(columnId);
+    }
+
+    addColumnConstraint(colID: string, constraint: any) {
+        if (!this.columns.has(colID)) {
+            console.log('No such column exists');
+            return;
+        } else {
+            this.columns.get(colID)?.constraints?.push(constraint);
         }
+    }
+
+    removeColumnConstraint(colID: string, constraint: any) {
+        const constraintArr = this.columns.get(colID)?.constraints;
+        if (!constraintArr) {
+            console.log(`Column ${colID} does not exist or does not have any constraints`);
+            return;
+        }
+        
+        const idx = constraintArr.indexOf(constraint)
+        if (idx !== -1) {
+            console.log(`Colum ${colID} does not have the ${constraint.name} constraint.`);
+            return;
+        }
+
+        const lastIdx = constraintArr.length - 1;
+        // Swap + pop for O(1) deletion
+        [constraintArr[idx], constraintArr[lastIdx]] = [constraintArr[lastIdx], constraint[idx]];
+        constraintArr.pop();
+
     }
     
     addRow(row: RowData): void {
