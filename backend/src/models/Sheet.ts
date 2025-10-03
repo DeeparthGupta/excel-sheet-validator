@@ -6,7 +6,7 @@ type ErrorMap = Map<RowID, string[]>;
 
 interface ColumnData {
     displayName: string;
-    constraints?: any[];
+    constraints: any[];
 }
 
 interface RowReference{
@@ -26,17 +26,19 @@ interface SerializedRow {
 export class Sheet{
     sheetID: string; // ULID to identify sheet anywhere
     sheetName: string;
+
     columns: Map<ColumnID, ColumnData> = new Map();
     rows: Map<RowID, RowData> = new Map();
+
     graveyard: RowID[] = []; 
     errors?: ErrorMap;
 
-    private _validRowCount: number = 0;
-    private _invalidRowCount: number = 0;
-    private _uniquenessMap: UniquenessMap = new Map();
-    private _errorMap: ErrorMap = new Map();
-    private _columnCounter: number = 1;
-    private _rowCounter: RowID = 1n;
+    private validRowCount: number = 0;
+    private invalidRowCount: number = 0;
+    private uniquenessMap: UniquenessMap = new Map();
+    private errorMap: ErrorMap = new Map();
+    private columnCounter: number = 1;
+    private rowCounter: RowID = 1n;
 
     constructor(id: string, name: string, columns?: ColumnData[], rows?: RowData[]) {
         this.sheetID = id;
@@ -59,30 +61,33 @@ export class Sheet{
         return this.rows.size;
     }
     
-    get validRowCount() {
-        return this._validRowCount;
+    get validRows() {
+        return this.validRowCount;
     }
 
-    get invalidRowCount() {
-        return this._invalidRowCount;
+    get invalidRows() {
+        return this.invalidRowCount;
     }
 
     addColumn(column: ColumnData): void {
-        const columnId:string = `col${this._columnCounter++}`;
+        const columnId: string = `col${this.columnCounter++}`;
+        // Ensure a constraints array always exists
+        column.constraints = column.constraints ?? [];
         this.columns.set(columnId,column)
     }
     
+    // Remove column by ID
     removeColumn(columnId: ColumnID): void {
         this.columns.delete(columnId);
     }
 
     addColumnConstraint(colID: string, constraint: any) {
-        if (!this.columns.has(colID)) {
-            console.log('No such column exists');
+        const column = this.columns.get(colID);
+        if (!column) {
+            console.log(`Column ${colID} does not exist`);
             return;
-        } else {
-            this.columns.get(colID)?.constraints?.push(constraint);
         }
+        column.constraints.push(constraint);
     }
 
     removeColumnConstraint(colID: string, constraint: any) {
@@ -108,19 +113,21 @@ export class Sheet{
     addRow(row: RowData): void {
         const rowID: RowID = this.graveyard.length > 0
             ? this.graveyard.pop()!
-            : this._rowCounter++
+            : this.rowCounter++
             ;
         this.rows.set(rowID, row);
     }
 
     removeRow(rowID: RowID): void {
         this.rows.delete(rowID);
-        if (this._errorMap) this._errorMap.delete(rowID);
+        this.errorMap.delete(rowID);
         this.graveyard.push(rowID);
     }
 
+    // ========= Validation =========
+
     generateUniqunessMap(): void{
-        if (this._uniquenessMap.size > 0) return;
+        if (this.uniquenessMap.size > 0) return;
         else {
             
         }
