@@ -1,17 +1,20 @@
 type RowID = bigint;
 type ColumnID = string;
 type RowData = Record<string, any>;
-type UniquenessMap = Map<string, Map<any, Set<number>>>;
-type ErrorMap = Map<RowID, string[]>;
+type UniquenessMap = Map<ColumnID, Map<any, Set<RowID>>>;
+type ErrorMap = Map<RowID, Map<ColumnID, string>>;
+
 
 interface ColumnData {
     displayName: string;
-    constraints: any[];
+    constraints: {
+        [key: string]: any;
+    };
 }
 
 interface RowReference{
     sheetId: string;
-    rowID: number;
+    rowID: RowID;
 }
 
 interface SerializedRow {
@@ -35,8 +38,10 @@ export class Sheet{
 
     private validRowCount: number = 0;
     private invalidRowCount: number = 0;
+
     private uniquenessMap: UniquenessMap = new Map();
-    private errorMap: ErrorMap = new Map();
+    private errorMap: ErrorMap = new Map(); 
+
     private columnCounter: number = 1;
     private rowCounter: RowID = 1n;
 
@@ -104,7 +109,7 @@ export class Sheet{
         }
 
         const lastIdx = constraintArr.length - 1;
-        // Swap + pop for O(1) deletion
+        // Swap and pop for O(1) deletion
         [constraintArr[idx], constraintArr[lastIdx]] = [constraintArr[lastIdx], constraint[idx]];
         constraintArr.pop();
 
@@ -126,7 +131,7 @@ export class Sheet{
 
     // ========= Validation =========
 
-    generateUniqunessMap(): void{
+    generateUniqunessMap(colID: ColumnID): void{
         if (this.uniquenessMap.size > 0) return;
         else {
             
