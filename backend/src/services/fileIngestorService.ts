@@ -5,13 +5,18 @@ import { ExcelRow, JSONWorkBook } from "../types/types.js";
 
 export async function workbookToJson(
     inputPath: string,
-    sheetNames: string[] = [] // Process specific sheets else process all
+    sheetNames: string[] = [], // Process specific sheets else process all
+    skipRows: number[] | number | undefined
 ): Promise<JSONWorkBook> {
     const workBookName = path.basename(inputPath, extname(inputPath));
     const result: Map<string, ExcelRow[]> = new Map();
 
     const sheetsToSteam = (await getWorksheets({ filePath: inputPath }))
         .filter(s => !sheetNames.length || sheetNames.includes(s.name))
+    
+    const skipSet:Set<number> = skipRows !== undefined
+        ? new Set(Array.isArray(skipRows) ? skipRows : [skipRows])
+        : new Set<number>();
     
     for (const sheetObject of sheetsToSteam) {
         const sheetName: string = sheetObject.name;
@@ -28,6 +33,11 @@ export async function workbookToJson(
         let rowIndex = 0;
 
         for await (const row of stream) {
+            if (skipSet.has(rowIndex)) {
+                rowIndex++;
+                continue;
+            }
+
             const { formatted, header } = row;
 
             if (headers.length === 0) {
@@ -41,7 +51,10 @@ export async function workbookToJson(
                 }
             }
 
-            if (!headers.length) continue;
+            if (!headers.length) {
+                rowIndex++;
+                continue;
+            }
 
             // Build row Object
             const rowObj: ExcelRow = headers.reduce((acc, key, colIndex) => {
