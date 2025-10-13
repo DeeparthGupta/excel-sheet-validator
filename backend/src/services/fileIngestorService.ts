@@ -11,14 +11,14 @@ export async function workbookToJson(
     const workBookName = path.basename(inputPath, extname(inputPath));
     const result: Map<string, ExcelRow[]> = new Map();
 
-    const sheetsToSteam = (await getWorksheets({ filePath: inputPath }))
+    const sheetsToStream = (await getWorksheets({ filePath: inputPath }))
         .filter(s => !sheetNames.length || sheetNames.includes(s.name))
     
     const skipSet:Set<number> = skipRows !== undefined
         ? new Set(Array.isArray(skipRows) ? skipRows : [skipRows])
         : new Set<number>();
     
-    for (const sheetObject of sheetsToSteam) {
+    for (const sheetObject of sheetsToStream) {
         const sheetName: string = sheetObject.name;
         result.set(sheetName, []);
 
