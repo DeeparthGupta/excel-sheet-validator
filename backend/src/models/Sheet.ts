@@ -4,7 +4,6 @@ type RowData = Record<string, any>;
 type UniquenessMap = Map<ColumnID, Map<any, Set<RowID>>>;
 type ErrorMap = Map<RowID, Map<ColumnID, string>>;
 
-
 interface ColumnData {
     displayName: string;
     constraints: {
