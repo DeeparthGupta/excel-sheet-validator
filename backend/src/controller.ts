@@ -44,7 +44,7 @@ export async function handleExcelUpload(req: Request, res: Response): Promise<vo
         }
 
         try {
-            const { workBookName, sheets } = await workbookToJson(file.path, []);
+            const { workBookName, sheets } = await workbookToJson(file.path, [], 1);
             const uniqueColumns = parseFormDataStrings(req.body, "uniqueColumns");
             const keyMaps = parseFormDataStrings(req.body, "keyMaps");
             const relations = parseFormDataStrings(req.body, "relations");
