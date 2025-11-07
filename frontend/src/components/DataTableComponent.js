@@ -1,119 +1,109 @@
-import DataTable from "frappe-datatable";
-import { useEffect, useRef } from "react";
+import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
+import { AgGridReact } from "ag-grid-react";
+import "ag-grid-community/styles/ag-theme-alpine.css";
+import "../styles/dataGrid.css"
 
-function DataTableComponent({ rows, columns, revalidate }) {
-    const tableDivRef = useRef();
-	const tableRef = useRef();
+ModuleRegistry.registerModules([ AllCommunityModule ]);
+
+
+function DataTableComponent({ rows, tableRef, excludedFields, onCellValueChanged, searchQuery, onHasMatch }) {
 	
-	/* const applyStyleToRow = (rowData, rowIndex) => {
-    // Set styles
-		if (rowData._valid) {
-			tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}`, {
-				background: 'transparent'
-			});
-			tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}`, {
-				background: '#77e977ff'
-			});
-		} else if (!rowData._valid) {
-			tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}`, {
-				background: '#transparent'
-			});
-			tableRef.current.style.setStyle(`.dt-cell--row-${Number(rowIndex)}`, {
-				background: '#f0b6b6ff'
-			});
-
-			// Use direct DOM manipulation because cell styles don't change after initial change.
-			rowData._errors.forEach(key => {
-				const columnIndex = columns.findIndex(col => col.id === key);
-				const cellSelector = `.dt-cell--row-${Number(rowIndex)}.dt-cell--col-${columnIndex}`;
-				const cells = document.querySelectorAll(cellSelector);
-				cells.forEach(cell => cell.style.background = 'transparent');
-				cells.forEach(cell => cell.style.background = '#f72424ff');
-			});
-		}
-    
-	} */
-
-	const applyRowStyle = (rowIndex, isValid) => {
-		const rowSelector = `.dt-cell--row-${Number(rowIndex)}`;
-		tableRef.current.style.setStyle(rowSelector, {
-			background: "transparent"
-		});
-		tableRef.current.style.setStyle(rowSelector, isValid
-			? { background: "#77e977ff" }
-			: { background: "#f0b6b6ff" }
-		);
-	};
-
-	const applyCellStyle = (rowIndex, colIndex) => {
-		const cellSelector = `.dt-cell--row-${Number(rowIndex)}.dt-cell--col-${colIndex}`;
-		const cells = document.querySelectorAll(cellSelector);
-		cells.forEach(cell => cell.style.background = "transparent");
-		cells.forEach(cell => cell.style.background = '#f72424ff');
+	const displayColumns = rows.length > 0
+		? Object.keys(rows[0]).filter(key => !excludedFields.includes(key) && !key.endsWith("_errors"))
+		: [];
+	
+	const firstColumn = displayColumns[0];
+	const noFirstColumn = displayColumns.slice(1);
+	
+	const agColumns = [
+		{	
+			headerName: "_valid",
+			field: "_valid",
+			hide: true,
+		},
+		
+		...(firstColumn ? [{
+			headerName: firstColumn,
+			field: firstColumn,
+			editable: false,
+			filter: false,
+			flex: 1,
+			cellClass: params =>
+				params.data._valid === false
+				&& params.data._errorCols.length > 0
+				&& params.data._errorCols.includes(params.colDef.field)
+				? "cell-error"
+				: undefined,
+		}] : []),
+		
+		...noFirstColumn.map(column => {
+			const errorField = `${column}_errors`;
+			return {
+				headerName: column,
+				field: column,
+				editable: true,
+				flex: 1,
+				filter: true,
+				cellRenderer: params => {
+					const errorVal = params.data[errorField];
+					return errorVal !== undefined
+						? `${params.value} (${errorVal})`
+						: params.value
+				},
+				cellClass: params => {
+					const errorVal = params.data[errorField];
+					if (errorVal !== undefined) {
+						return errorVal > 0 ? "cell-error" : "cell-ok";
+					}
+					return params.data._valid === false
+						&& params.data._errorCols.length > 0
+						&& params.data._errorCols.includes(params.colDef.field)
+						? "cell-error"
+						: undefined;
+				},
+			};
+		}),
+		
+	];
+	
+	const useAutoHeight = rows.length < 10;
+	
+	const setRowStyle = params => {
+		if (params.data._valid === true) return { backgroundColor: "#77e977ff" };
+		if (params.data._valid === false) return { backgroundColor: "#f0b6b6ff" };
+		return undefined;
+	}
+	
+	// Retports matches when user enters text
+	const handleFilterChanged = event => {
+		if (!onHasMatch) return;
+		const query = (searchQuery || "").trim();
+		if (query.length === 0) return;
+		onHasMatch(event.api.getDisplayedRowCount() > 0);
 	}
 
-	useEffect(() => {
-		const applyStyles = (tableData) => {
-			tableData.forEach((rowData, rowIndex) => {
-				applyRowStyle(rowIndex, rowData._valid);
-				rowData._errors.forEach(key => {
-					const colIndex = columns.findIndex(col => col.id === key);
-					applyCellStyle(rowIndex, colIndex);
-				});
-			});
-		}
+	// Forward API to the SheetTabs component
+	const handleGridReady = params => {
+        if (typeof tableRef === "function") tableRef(params.api);
+        else if (tableRef && typeof tableRef === "object") tableRef.current = params.api;
+	};
+	
 
-		if (columns.length > 0 && rows.length > 0 && tableDivRef.current) {
-			if (tableRef.current){
-				tableRef.current.refresh(rows, columns);
-				setTimeout(() => applyStyles(rows), 0);
-			}/*  else if (rows <= 0 || columns <= 0 || !Array.isArray(rows) || !Array.isArray(rows)) {
-				console.log(`Invalid data: \n
-					Is row an array: ${Array.isArray(rows)} \n
-					Is Columns an array: ${Array.isArray(columns)} \n
-					Row Length: ${rows.length}
-					Column Length: ${columns.length}
-					Column Data: ${columns}
-					First 2 rows: ${rows[0]} \n ${rows[1]}`);
-			} */ else {
-				//console.log(rows);
-				tableRef.current = new DataTable(tableDivRef.current, {
-					columns: columns,
-					data: rows,
-					serialNoColumn: false,
-					getEditor(colIndex, rowIndex, value, parent, column, row, rowdata) {
-						const $input = document.createElement('input');
-						$input.type = 'text';
-						$input.value = value;
-						parent.appendChild($input)
-
-						return {
-							initValue(value) {
-								$input.value = value;
-								$input.focus();
-							},
-							setValue(value) {
-								$input.value = value;
-							},
-							getValue(value) {
-								const rowCopy = { ...rowdata };
-								rowCopy[column["id"]] = $input.value;
-								revalidate(rowCopy);
-								return $input.value;
-								
-							}
-						}
-					}
-				});
-				setTimeout(() => applyStyles(rows), 0);
-			}	
-
-		}
-    }, [columns, rows, revalidate]);
-    
-    return (
-        <div ref={tableDivRef} />
-    );
+	return (
+		<div className="ag-theme-alpine data-grid-base">
+			<AgGridReact
+				rowData={rows}
+				columnDefs={agColumns}
+				getRowStyle={setRowStyle}
+				onCellValueChanged={onCellValueChanged}
+				onFilterChanged={handleFilterChanged}
+				onGridReady={handleGridReady}
+				getRowId={params => String(params.data._index)}
+				domLayout={useAutoHeight ? 'autoHeight' : undefined}
+				quickFilterText={searchQuery}
+			/>			
+		</div>
+	);
 }
 
 export default DataTableComponent;

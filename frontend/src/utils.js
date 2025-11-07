@@ -3,42 +3,15 @@ export const retrieveData = async (filename, targetServer) => {
         const response = await fetch(`${targetServer}/retrieve?filename=${filename}`);
         const responseData = await response.json();
 
-        if (response.ok && responseData.data.length > 0) {
+        if (response.status === 200 && Object.keys(responseData.sheets).length > 0) {
             //console.log(JSON.stringify(responseData.data, null, 2));
-            return { data: responseData.data, message: "Data retrieved" };
+            return { fileName:responseData.filename, data: responseData.sheets, message: responseData.message || "Data retrieved" };
         } else {
-            return { data: [], message: "Failed to retrieve data:" + response.error };
+            return { fileName:responseData.filename, data: {}, message: "Failed to retrieve data:" + (responseData.error || "Unknown error")};
         }
     } catch (err) {
-        return { data: [], message: "Unable to retrieve data:" + err };
+        return { data: {}, message: "Unable to retrieve data:" + err };
     }
-};
-
-export const processDataForFrappe = (data, hiddenColumns) => {
-    const columns = [
-        { name: "Customer Name", id: "Customer Name" },
-        { name: "Number", id: "Number" },
-        { name: "Email", id: "Email" },
-        { name: "Time", id: "Time" },
-    ]/* Object.keys(data[0] || {})
-        .filter(key => !hiddenColumns.includes(key))
-        .map((key) => ({
-            name: key,
-            id: key,
-        }));
-
-    const rows = data .map(row =>
-        columns.map(col =>
-            String(row[col.id] ?? "")
-        )
-    );
-    
-    console.log("Columns:", JSON.stringify(columns,null,2));
-    console.log("Rows:", JSON.stringify(rows,null,2));
-
-    setColumns(columns);
-    setFilteredRows(data) */
-    return { columns: columns, filteredRows: data };
 };
 
 /* const uploadToDB = async (uploadTarget, server, filename) => {
@@ -69,15 +42,19 @@ export const processDataForFrappe = (data, hiddenColumns) => {
     }
 } */
 
-export const revalidate = async (modRow, filename, targetServer) => {
-    console.log(`Filename: ${filename}`);
+export const revalidate = async (modRow, filename, mainSheetName, uniqueColumns, targetServer, sheetName, relationConfig = null) => {
+    //console.log(`ModRow: ${modRow}`);
     try {
         const response = await fetch(`${targetServer}/update`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 filename: filename,
-                row: modRow
+                sheetName: sheetName,
+                mainSheet: mainSheetName,
+                row: modRow,
+                relationConfig: relationConfig,
+                uniqueColumns: uniqueColumns
             })
         });
         const result = await response.json();
@@ -90,3 +67,34 @@ export const revalidate = async (modRow, filename, targetServer) => {
         return { success: true, message: `Error sending update: ${err}` };
     }
 };
+
+export const dataDiff = (oldData, newData) => {
+    const diff = {};
+    for (const sheetName of Object.keys(newData)) {
+        const oldRows = oldData[sheetName] || [];
+        const newRows = newData[sheetName] || [];
+        diff[sheetName] = [];
+        for (let i = 0; i < newRows.length; i++) {
+            const oldRow = oldRows[i];
+            const newRow = newRows[i];
+            
+            if (!oldRow) {
+                diff[sheetName].push(newRow);
+                continue;
+            }
+            for (const key in newRow) {
+                if (Array.isArray(oldRow[key]) && Array.isArray(newRow[key])) {
+                    if (JSON.stringify(oldRow[key]) !== JSON.stringify(newRow[key])) {
+                        diff[sheetName].push(newRow);
+                        break
+                    }
+                }
+                else if (oldRow[key] !== newRow[key]) {
+                    diff[sheetName].push(newRow);
+                    break;
+                }
+            }
+        }
+    }
+    return diff;
+};  

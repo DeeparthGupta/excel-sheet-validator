@@ -1,0 +1,23 @@
+.App {
+  text-align: center;
+}
+
+.cell-error {
+  background-color: #f72424ff !important;
+}
+
+.cell-ok{
+  background-color: #77e977ff !important;
+}
+
+.data-grid-base{
+  height: 600px;
+  width: 800px;
+  max-height: 80vh;
+  overflow: auto;
+}
+
+.ag-grid{
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
